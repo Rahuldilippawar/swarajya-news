@@ -1,0 +1,31 @@
+{
+  "name": "swarajya-news",
+  "private": true,
+  "description": "Swarajya News \u2014 independent digital news platform (website, Android app, Admin and Reporter panels on one Firebase backend).",
+  "workspaces": [
+    "shared",
+    "panel-kit",
+    "apps/website",
+    "apps/admin",
+    "apps/reporter",
+    "functions",
+    "tests/rules"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:website": "npm run dev -w apps/website",
+    "dev:admin": "npm run dev -w apps/admin",
+    "dev:reporter": "npm run dev -w apps/reporter",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "emulators": "firebase emulators:start",
+    "test:rules": "npm run test:rules -w tests/rules"
+  },
+  "devDependencies": {
+    "firebase-tools": "14.27.0"
+  }
+}

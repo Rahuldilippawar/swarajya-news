@@ -1,0 +1,133 @@
+rules_version = '2';
+
+// Swarajya News — Firestore Security Rules.
+//
+// Roles come from the `role` custom claim on the Firebase Auth ID token. The
+// claim is set only by Cloud Functions / the Admin SDK (functions/src/scripts/setRole.ts),
+// so users can never grant themselves a role by editing Firestore.
+//
+// Status changes on news (submit, review, approve, publish, archive) are NOT
+// allowed from clients. They go through Cloud Functions, which enforce the
+// editorial workflow in shared/src/newsStatus.ts and write the audit log.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function role() { return signedIn() ? request.auth.token.get('role', '') : ''; }
+    function hasAnyRole(roles) { return role() in roles; }
+
+    function isSuperAdmin() { return role() == 'SUPER_ADMIN'; }
+    function canManageUsers() { return hasAnyRole(['SUPER_ADMIN', 'OWNER']); }
+    function canEditAnyNews() { return hasAnyRole(['SUPER_ADMIN', 'EDITOR']); }
+    function canCreateNews() { return hasAnyRole(['SUPER_ADMIN', 'EDITOR', 'REPORTER']); }
+    function canDistribute() { return hasAnyRole(['SUPER_ADMIN', 'EDITOR', 'SOCIAL_MEDIA_MANAGER']); }
+    function canManageAds() { return hasAnyRole(['SUPER_ADMIN', 'OWNER']); }
+
+    function changedKeys() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Fields an author may write while the article is a draft or was returned for changes.
+    function contentFields() {
+      return ['headline', 'summary', 'content', 'categoryId', 'districtId', 'talukaId', 'villageId',
+              'thumbnailUrl', 'youtubeUrl', 'youtubeVideoId', 'videoProvider', 'tags',
+              'seoTitle', 'seoDescription', 'updatedAt'];
+    }
+    // Additional presentation fields only editors may change.
+    function editorFields() {
+      return contentFields().concat(['slug', 'isBreaking', 'isFeatured', 'reporterId', 'reporterUid', 'reporterName']);
+    }
+
+    function validNewsContent(d) {
+      return d.headline is string && d.headline.size() > 0 && d.headline.size() <= 200
+        && (!('summary' in d) || (d.summary is string && d.summary.size() <= 500))
+        && (!('content' in d) || (d.content is string && d.content.size() <= 50000))
+        && (!('tags' in d) || (d.tags is list && d.tags.size() <= 15))
+        && (!('youtubeVideoId' in d) || d.youtubeVideoId == null
+            || (d.youtubeVideoId is string && d.youtubeVideoId.matches('^[A-Za-z0-9_-]{11}$')))
+        && (!('thumbnailUrl' in d) || d.thumbnailUrl == null
+            || (d.thumbnailUrl is string && d.thumbnailUrl.matches('^https://.*')));
+    }
+
+    // ---------------------------------------------------------------- users
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || canManageUsers() || canEditAnyNews());
+      allow write: if false; // Managed by Cloud Functions.
+    }
+
+    // ----------------------------------------------------------------- news
+    match /news/{newsId} {
+      function isAuthor() { return signedIn() && resource.data.reporterUid == request.auth.uid; }
+
+      // Public feeds must query with where('status', '==', 'PUBLISHED').
+      allow read: if resource.data.status == 'PUBLISHED' || canEditAnyNews() || isAuthor();
+
+      allow create: if canCreateNews()
+        && request.resource.data.keys().hasOnly(editorFields().concat(['newsId', 'status', 'viewCount', 'createdAt']))
+        && request.resource.data.newsId == newsId
+        && request.resource.data.status == 'DRAFT'
+        && request.resource.data.viewCount == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.reporterUid is string
+        && (canEditAnyNews() || (
+              request.resource.data.reporterUid == request.auth.uid
+              && request.resource.data.get('isBreaking', false) == false
+              && request.resource.data.get('isFeatured', false) == false))
+        && validNewsContent(request.resource.data);
+
+      allow update: if validNewsContent(request.resource.data)
+        && request.resource.data.updatedAt == request.time
+        && (
+          (canEditAnyNews() && changedKeys().hasOnly(editorFields()))
+          || (isAuthor()
+              && resource.data.status in ['DRAFT', 'CHANGES_REQUESTED']
+              && changedKeys().hasOnly(contentFields()))
+        );
+
+      allow delete: if isAuthor() && resource.data.status == 'DRAFT';
+    }
+
+    // ------------------------------------------------------ taxonomy & settings
+    match /categories/{id} {
+      allow read: if resource.data.isActive == true || signedIn();
+      allow write: if isSuperAdmin();
+    }
+
+    match /locations/{id} {
+      allow read: if resource.data.isActive == true || signedIn();
+      allow write: if isSuperAdmin();
+    }
+
+    match /appSettings/{id} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /advertisements/{id} {
+      allow read: if resource.data.isActive == true || canManageAds();
+      allow write: if canManageAds();
+    }
+
+    // ------------------------------------------ editorial & distribution records
+    match /editorialReviews/{id} {
+      allow read: if canEditAnyNews()
+        || (signedIn() && get(/databases/$(database)/documents/news/$(resource.data.newsId)).data.reporterUid == request.auth.uid);
+      allow write: if false; // Written by Cloud Functions alongside status changes.
+    }
+
+    match /notifications/{id} {
+      allow read: if canDistribute();
+      allow write: if false;
+    }
+
+    match /whatsappMessages/{id} {
+      allow read: if canDistribute();
+      allow write: if false;
+    }
+
+    match /auditLogs/{id} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+  }
+}
