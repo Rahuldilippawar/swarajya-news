@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 
 /// Build-time configuration, passed with `--dart-define-from-file=config/dev.json`
 /// (see README). Nothing project-specific is committed to the repository.
@@ -13,7 +14,8 @@ class AppConfig {
   static const siteUrl = String.fromEnvironment('SITE_URL');
 
   /// Talk to the local Firestore emulator (host as seen from the device, e.g. 10.0.2.2 for the Android emulator).
-  static const firestoreEmulatorHost = String.fromEnvironment('FIRESTORE_EMULATOR_HOST');
+  /// Ignored in release builds, so a store build can never point at an emulator.
+  static const firestoreEmulatorHost = kReleaseMode ? '' : String.fromEnvironment('FIRESTORE_EMULATOR_HOST');
 
   static bool get isFirebaseConfigured =>
       firebaseApiKey.isNotEmpty && firebaseAppId.isNotEmpty && firebaseProjectId.isNotEmpty;

@@ -43,6 +43,7 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      # Proves the Android build (Gradle, plugins, minSdk) works. The example config
-      # has placeholder Firebase values, so this APK compiles but cannot load news.
-      - run: flutter build apk --debug --dart-define-from-file=config/example.json
+      # Proves the release build (Gradle, plugins, code shrinking) works. Without
+      # key.properties it is signed with the debug key; the example config has
+      # placeholder Firebase values, so it compiles but cannot load news.
+      - run: flutter build appbundle --release --dart-define-from-file=config/example.json

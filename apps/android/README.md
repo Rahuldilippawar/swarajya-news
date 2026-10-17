@@ -56,9 +56,15 @@ Tests use an in-memory repository (`test/fakes.dart`), so they need neither Fire
 - `lib/widgets/` — cards, images with placeholders, paged list, loading/error/empty states.
 - `lib/bootstrap.dart` — Firebase start-up behind the splash screen (with retry on failure).
 
-## Before the first Play Store release
+## Release
 
-- Confirm the application ID in `android/app/build.gradle.kts` (currently `com.swarajyanews.swarajya_news`) —
-  it can never change after publishing.
-- Set up release signing and replace the launcher icon with the official logo.
-- Test on physical devices (the CI builds a debug APK; it has not yet been run on a real phone).
+- Release builds are signed with the upload key from `android/key.properties` (copy
+  `android/key.properties.example`; the file and the keystore are git-ignored). Without it they fall back to the
+  debug key, which Google Play rejects.
+- The **Release Android** GitHub workflow builds the signed bundle from secrets; see
+  [docs/LAUNCH.md §8](../../docs/LAUNCH.md#8-android-release-owner--newsroom).
+- Release builds ignore `FIRESTORE_EMULATOR_HOST`, so a store build can never point at an emulator.
+- Launcher icons are generated from the website logo; Play Store graphics, listing text and the Data safety
+  answers are in `store/`.
+- Confirm the application ID before the first upload (it can never change), and test on physical phones through
+  Play's internal testing track.

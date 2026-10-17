@@ -13,7 +13,7 @@
 | 9 | WhatsApp integration | ✅ Done (live API test pending) |
 | 10 | Ads and reports | ✅ Done |
 | 11 | Security and testing | ✅ Done |
-| 12 | Production launch | ⬜ |
+| 12 | Production launch | ✅ Ready (go-live steps need the production accounts) |
 
 ## Milestone 1 — Project setup ✅
 
@@ -234,9 +234,25 @@ Every role signed in against the emulators and opened every page in its menu wit
 Not testable from the development sandbox: the restore drill on a real project (needs the production project and
 `gcloud`), App Check with real keys.
 
-## Next: Milestone 12 — Production launch
+## Milestone 12 — Production launch ✅ (ready)
 
-- Create the production Firebase project, deploy rules, indexes and functions; set secrets.
-- Deploy the website and panels on their domains; run the restore drill once.
-- Release the Android app on Google Play (signing key, store listing, privacy policy).
-- Create the real staff accounts and the first Super Admin; go-live checklist.
+Everything that can be prepared in the repository is done; the remaining steps need the production Firebase
+project, domains, Play Console and Meta accounts, and are listed in order in [LAUNCH.md](LAUNCH.md).
+
+- **Go-live guide** ([LAUNCH.md](LAUNCH.md)): management decisions, production project, GitHub environments and
+  deploy service account, backend deploy, first accounts and data, website hosting (Vercel or App Hosting),
+  verification, backups, Android release, WhatsApp, go-live checklist and rollback.
+- **Deploy backend** workflow (manual, approval-gated for production): runs typecheck and all tests, deploys rules,
+  indexes and functions with per-project parameters, then smoke-tests the functions.
+- **Smoke test** (`npm run smoke`): 13 read-only checks of the live sites and functions (pages, security headers,
+  sitemap on the right domain, policies not placeholders, 404s, function endpoints). Passed against production
+  builds and the emulators; confirmed it fails when the sitemap points at another domain.
+- **Android**: release signing from `key.properties`, a **Release Android** workflow producing a signed App
+  Bundle (refuses emulator or non-https configs), CI now builds the release bundle on every push, release builds
+  ignore emulator settings, launcher icon from the official logo, Play icon and feature graphic, and listing
+  text with Data safety and content form answers (`apps/android/store/`).
+- **Policies**: privacy policy (website and app) and editorial policy drafted from what the platform actually
+  does, for management approval.
+
+Pending, outside the repository: production project and deploys, domains, Play Console review, WhatsApp template
+approval, physical-device tests, real-device push and live WhatsApp tests, the first production restore drill.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config/app_config.dart';
 import '../data/models.dart';
 import '../services.dart';
 import '../widgets/states.dart';
@@ -99,14 +100,31 @@ class _ContactScreenState extends State<ContactScreen> {
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
-  // Placeholder: the final text must be approved by Swarajya News management before release.
+  // A summary of the website's full policy (apps/website/src/app/privacy-policy); keep the two in step.
   @override
-  Widget build(BuildContext context) => const _InfoScreen(
-        title: 'गोपनीयता धोरण',
-        children: [
-          Text('हे धोरण सध्या तयार केले जात आहे आणि लवकरच प्रकाशित केले जाईल.'),
-          SizedBox(height: 12),
-          Text('हे ॲप वापरण्यासाठी लॉगिनची आवश्यकता नाही. जतन केलेल्या बातम्या फक्त तुमच्या फोनवर साठवल्या जातात.'),
+  Widget build(BuildContext context) {
+    final url = AppConfig.siteUrl.isEmpty ? null : '${AppConfig.siteUrl.replaceAll(RegExp(r'/+$'), '')}/privacy-policy';
+    return _InfoScreen(
+      title: 'गोपनीयता धोरण',
+      children: [
+        const Text('हे ॲप वापरण्यासाठी खाते किंवा लॉगिन लागत नाही. आम्ही तुमचे नाव, फोन नंबर किंवा स्थान विचारत नाही.'),
+        const SizedBox(height: 12),
+        const Text('जतन केलेल्या बातम्या आणि सूचना सेटिंग्ज फक्त तुमच्या फोनवर साठवल्या जातात.'),
+        const SizedBox(height: 12),
+        const Text('सूचना Firebase Cloud Messaging द्वारे तुम्ही निवडलेल्या विषयांनुसार येतात; त्या «सूचना सेटिंग्ज» मधून बंद करता येतात.'),
+        const SizedBox(height: 12),
+        const Text('वाचनसंख्या आणि जाहिरात संख्या फक्त एकूण आकड्यांत ठेवल्या जातात. आम्ही analytics किंवा जाहिरात-ट्रॅकिंग वापरत नाही.'),
+        const SizedBox(height: 12),
+        const Text('व्हिडिओ YouTube वरून प्ले होतात; त्यावर Google चे गोपनीयता धोरण लागू होते.'),
+        if (url != null) ...[
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('पूर्ण धोरण वाचा'),
+            onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+          ),
         ],
-      );
+      ],
+    );
+  }
 }

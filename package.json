@@ -23,7 +23,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "emulators": "firebase emulators:start",
-    "test:rules": "npm run test:rules -w tests/rules"
+    "test:rules": "npm run test:rules -w tests/rules",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "firebase-tools": "14.27.0",

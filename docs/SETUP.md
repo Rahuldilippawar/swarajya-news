@@ -175,4 +175,5 @@ The Next.js apps can be deployed to Firebase App Hosting or any Next.js host
 
 Add each panel domain to **Authentication → Settings → Authorized domains**.
 
-Before launch, set up backups, the restore drill, alerts and the Auth settings in [OPERATIONS.md](OPERATIONS.md).
+Hosting options, environment variables and the full go-live order are in [LAUNCH.md](LAUNCH.md); backups,
+the restore drill, alerts and the Auth settings in [OPERATIONS.md](OPERATIONS.md).

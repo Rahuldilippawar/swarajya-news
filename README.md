@@ -25,7 +25,8 @@ Reporter submits → Editor reviews → Editor approves → Published on website
 | `panel-kit` | Firebase client, auth state, role guard and login form shared by both panels | React |
 | `tests/rules` | Firestore Security Rules tests (run against the emulator) | Vitest |
 | `firestore.rules`, `storage.rules`, `firestore.indexes.json` | Backend security and indexes | — |
-| `docs/` | Architecture, setup, security, operations and milestone notes | — |
+| `docs/` | Architecture, setup, launch, security, operations and milestone notes | — |
+| `scripts/smoke.mjs` | Post-deploy smoke test (`npm run smoke`) | Node |
 
 ## Prerequisites
 
@@ -71,7 +72,8 @@ npm run build         # production builds of all web apps + functions bundle
 cd apps/android && flutter analyze && flutter test
 ```
 
-CI runs all of the above on every push and pull request (`.github/workflows/ci.yml`).
+CI runs all of the above on every push and pull request (`.github/workflows/ci.yml`). Deploys and Android
+releases are manual workflows (`deploy-backend.yml`, `release-android.yml`); see [docs/LAUNCH.md](docs/LAUNCH.md).
 
 ## Roles and security
 
@@ -94,4 +96,6 @@ is created from the Admin Panel. See [docs/SETUP.md](docs/SETUP.md#2-create-the-
 
 ## Status
 
-Milestones 1–11 (setup, roles, news management, reporter workflow, editorial approval, public website, Android app, push notifications, WhatsApp, ads and reports, security and testing) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.
+All 12 milestones are complete in the repository. Going live needs the production accounts; follow
+[docs/LAUNCH.md](docs/LAUNCH.md) step by step. See [docs/MILESTONES.md](docs/MILESTONES.md) for what each
+milestone delivered.
