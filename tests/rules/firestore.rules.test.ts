@@ -1,7 +1,7 @@
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
 import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, setLogLevel, Timestamp, updateDoc, where } from "firebase/firestore";
 import { readFileSync } from "node:fs";
-import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 let env: RulesTestEnvironment;
 
@@ -118,6 +118,14 @@ describe("news", () => {
     await assertFails(setDoc(doc(db, "news/b"), { ...draft("b", "rep1"), thumbnailUrl: "http://127.0.0.1.evil.example/a.jpg" }));
     await assertSucceeds(setDoc(doc(db, "news/c"), { ...draft("c", "rep1"), thumbnailUrl: "https://firebasestorage.googleapis.com/a.jpg" }));
     await assertSucceeds(setDoc(doc(db, "news/d"), { ...draft("d", "rep1"), thumbnailUrl: "http://127.0.0.1:9199/v0/b/x/o/a.jpg" }));
+  });
+
+  it("only accepts URL-safe slugs", async () => {
+    const db = as("rep1", "REPORTER");
+    for (const slug of ["a/b", "x?y", "x#y", "../x", "a b", "<x>", "-a", "a--b"]) {
+      await assertFails(setDoc(doc(db, `news/s${slug.length}`), { ...draft(`s${slug.length}`, "rep1"), slug }));
+    }
+    await assertSucceeds(setDoc(doc(db, "news/ok"), { ...draft("ok", "rep1"), slug: "पुण्यात-पाऊस-k3x9a" }));
   });
 
   it("rejects malformed YouTube IDs", async () => {
@@ -308,6 +316,17 @@ describe("suspended staff", () => {
     await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "categories/c"), category("c")));
   });
 
+  it("cannot read unpublished news, staff records or audit logs either", async () => {
+    await seed("news/d", draft("d", "rep1"));
+    await seed("auditLogs/a", { action: "x" });
+    await seed("users/ed", { uid: "ed", role: "EDITOR", status: "SUSPENDED" });
+    await seed("users/sa", { uid: "sa", role: "SUPER_ADMIN", status: "SUSPENDED" });
+    await assertFails(getDoc(doc(as("ed", "EDITOR"), "news/d")));
+    await assertFails(getDoc(doc(as("ed", "EDITOR"), "users/rep1")));
+    await assertSucceeds(getDoc(doc(as("ed", "EDITOR"), "users/ed")));
+    await assertFails(getDoc(doc(as("sa", "SUPER_ADMIN"), "auditLogs/a")));
+  });
+
   it("blocks staff whose profile document is missing", async () => {
     await assertFails(setDoc(doc(as("ghost", "REPORTER"), "news/n"), draft("n", "ghost")));
   });
@@ -424,4 +443,65 @@ describe("locations", () => {
   it("only lets super admins write locations", async () => {
     await assertFails(setDoc(doc(as("ed", "EDITOR"), "locations/mh"), location("mh", "STATE", null)));
   });
+});
+
+// One row per role: what each may read or write directly from a client. Status
+// changes, user management and sending go through Cloud Functions and are
+// covered by the functions tests; docs/SECURITY.md lists the full matrix.
+describe("role matrix", () => {
+  const ROLES = ["SUPER_ADMIN", "OWNER", "EDITOR", "REPORTER", "SOCIAL_MEDIA_MANAGER", "NONE"] as const;
+  type Role = (typeof ROLES)[number];
+  const allowed: Record<string, Role[]> = {
+    "read another reporter's draft": ["SUPER_ADMIN", "EDITOR"],
+    "create news": ["SUPER_ADMIN", "EDITOR", "REPORTER"],
+    "edit any news": ["SUPER_ADMIN", "EDITOR"],
+    "read staff profiles": ["SUPER_ADMIN", "OWNER", "EDITOR"],
+    "create a category": ["SUPER_ADMIN"],
+    "write settings": ["SUPER_ADMIN"],
+    "create an ad": ["SUPER_ADMIN", "OWNER"],
+    "read ad stats": ["SUPER_ADMIN", "OWNER"],
+    "read WhatsApp subscribers": ["SUPER_ADMIN", "EDITOR", "SOCIAL_MEDIA_MANAGER"],
+    "read notification jobs": ["SUPER_ADMIN", "EDITOR", "SOCIAL_MEDIA_MANAGER"],
+    "read audit logs": ["SUPER_ADMIN"],
+  };
+  const ops = (db: ReturnType<typeof as>, uid: string): Record<string, () => Promise<unknown>> => ({
+    "read another reporter's draft": () => getDoc(doc(db, "news/other")),
+    "create news": () => setDoc(doc(db, `news/new-${uid}`), draft(`new-${uid}`, uid)),
+    "edit any news": () => updateDoc(doc(db, "news/other"), { summary: "edited", updatedAt: serverTimestamp() }),
+    "read staff profiles": () => getDoc(doc(db, "users/target")),
+    "create a category": () => setDoc(doc(db, "categories/matrix"), category("matrix")),
+    "write settings": () =>
+      setDoc(doc(db, "appSettings/public"), { channelName: "स्वराज्य न्यूज", contactDetails: {}, socialLinks: {}, updatedBy: uid, updatedAt: serverTimestamp() }),
+    "create an ad": () => setDoc(doc(db, "advertisements/matrix"), ad({ advertisementId: "matrix" })),
+    "read ad stats": () => getDoc(doc(db, "advertisements/off/daily/2026-10-17")),
+    "read WhatsApp subscribers": () => getDoc(doc(db, "whatsappSubscribers/919876543210")),
+    "read notification jobs": () => getDoc(doc(db, "notifications/job")),
+    "read audit logs": () => getDoc(doc(db, "auditLogs/a")),
+  });
+
+  for (const role of ROLES) {
+    it(role, async () => {
+      const uid = `m-${role.toLowerCase()}`;
+      if (role !== "NONE") await seed(`users/${uid}`, { uid, role, status: "ACTIVE" });
+      await seed("users/target", { uid: "target", role: "REPORTER", status: "ACTIVE" });
+      await seed("news/other", { ...draft("other", "rep2"), status: "DRAFT" });
+      await seed("advertisements/off", { ...ad({ advertisementId: "off" }), isActive: false });
+      await seed("advertisements/off/daily/2026-10-17", { impressions: 1 });
+      await seed("whatsappSubscribers/919876543210", { phone: "919876543210" });
+      await seed("notifications/job", { status: "SENT" });
+      await seed("auditLogs/a", { action: "x" });
+
+      const db = role === "NONE" ? as(uid) : as(uid, role);
+      const mismatches: string[] = [];
+      for (const [name, run] of Object.entries(ops(db, uid))) {
+        const expectAllowed = allowed[name]!.includes(role);
+        try {
+          await (expectAllowed ? assertSucceeds(run()) : assertFails(run()));
+        } catch {
+          mismatches.push(`${name}: expected ${expectAllowed ? "allowed" : "denied"}`);
+        }
+      }
+      expect(mismatches).toEqual([]);
+    });
+  }
 });

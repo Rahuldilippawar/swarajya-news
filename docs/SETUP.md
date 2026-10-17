@@ -78,9 +78,11 @@ password). Suspending an account takes effect immediately.
 1. In Google Cloud, create a **reCAPTCHA Enterprise** key for the panel domains.
 2. Firebase console → **App Check** → register each web app with that key, and the Android app with Play Integrity.
 3. Set `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` in each panel's environment and redeploy.
-4. Watch the App Check metrics until all traffic is verified, then:
-   - set `ENFORCE_APP_CHECK=true` in `functions/.env.<project>` and redeploy functions;
-   - enforce App Check for Firestore and Storage in the console.
+4. Watch the App Check metrics until all traffic is verified, then set `ENFORCE_APP_CHECK=true` in
+   `functions/.env.<project>` and redeploy functions.
+
+Do **not** enforce App Check on Firestore or Storage: the website reads Firestore from its server without an App
+Check token, so it would go offline. See [OPERATIONS.md](OPERATIONS.md#6-app-check).
 
 ## 6. Android package ID
 
@@ -172,3 +174,5 @@ The Next.js apps can be deployed to Firebase App Hosting or any Next.js host
 - `reporter.swarajyanews.in` → Reporter Panel
 
 Add each panel domain to **Authentication → Settings → Authorized domains**.
+
+Before launch, set up backups, the restore drill, alerts and the Auth settings in [OPERATIONS.md](OPERATIONS.md).

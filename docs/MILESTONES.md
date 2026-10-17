@@ -12,7 +12,7 @@
 | 8 | Push notifications | ✅ Done (real-device delivery test pending) |
 | 9 | WhatsApp integration | ✅ Done (live API test pending) |
 | 10 | Ads and reports | ✅ Done |
-| 11 | Security and testing | ⬜ |
+| 11 | Security and testing | ✅ Done |
 | 12 | Production launch | ⬜ |
 
 ## Milestone 1 — Project setup ✅
@@ -212,9 +212,31 @@ against the emulators (ads created, shown on the website, impressions and clicks
 - **Settings** (Super Admin; others read-only): channel name, tagline, phone, WhatsApp, email, address, social links
   — used by the website footer and Contact page and the app's Contact screen.
 
-## Next: Milestone 11 — Security and testing
+## Milestone 11 — Security and testing ✅
 
-- Review every role end to end, Security Rules coverage, invalid/unavailable YouTube handling, network failures,
-  notification and WhatsApp errors.
-- Backup and restore procedure (scheduled Firestore exports) and a tested restore.
-- Billing/performance review, rate limiting for public endpoints, App Check rollout.
+Acceptance: *every role reviewed, backups with a tested restore procedure, public endpoints protected* — met.
+Every role signed in against the emulators and opened every page in its menu with no permission errors.
+
+- **Role matrix**: [SECURITY.md](SECURITY.md) lists who may do what; a rules test runs 11 actions for each of the
+  five roles plus a signed-in user without a role (48 rules tests in total).
+- **Suspension is immediate for reads too**: suspended staff can no longer read drafts, staff records, audit logs
+  or distribution data, and an open panel page switches to an "Account suspended" notice without a reload.
+- **Public counters**: `recordView` and `recordAdEvent` are rate-limited per IP address.
+- **Slugs**: only URL-safe slugs are accepted (rules), and publishing replaces a malformed one.
+- **Web headers**: nosniff, referrer policy, permissions policy, HSTS; panels cannot be framed by other sites.
+- **WhatsApp webhook**: verify token compared in constant time (signatures already were).
+- **Dependencies**: no known vulnerabilities in production dependencies (`npm audit --omit=dev`).
+- **Backups**: [OPERATIONS.md](OPERATIONS.md) — daily and weekly managed Firestore backups, point-in-time recovery,
+  a restore drill into a separate database, and `npm run verify-restore -w functions` to compare document counts
+  (tested against the emulator). Also Auth export, Storage soft delete, alerts, budgets, App Check rollout,
+  Auth console settings, and cost/performance notes.
+
+Not testable from the development sandbox: the restore drill on a real project (needs the production project and
+`gcloud`), App Check with real keys.
+
+## Next: Milestone 12 — Production launch
+
+- Create the production Firebase project, deploy rules, indexes and functions; set secrets.
+- Deploy the website and panels on their domains; run the restore drill once.
+- Release the Android app on Google Play (signing key, store listing, privacy policy).
+- Create the real staff accounts and the first Super Admin; go-live checklist.

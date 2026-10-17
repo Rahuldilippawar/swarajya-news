@@ -41,3 +41,8 @@ export function newsSlug(headline: string): string {
 export function taxonomySlug(name: string, nameEn?: string): string {
   return slugify(nameEn?.trim() || name, 60);
 }
+
+/** Letters (any script), combining marks, digits and single hyphens — what slugify() produces. Mirrored in firestore.rules. */
+export function isValidSlug(slug: string): boolean {
+  return slug.length > 0 && slug.length <= 100 && /^[\p{L}\p{M}\p{N}]+(?:-[\p{L}\p{M}\p{N}]+)*$/u.test(slug);
+}

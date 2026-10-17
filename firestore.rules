@@ -44,8 +44,14 @@ service cloud.firestore {
       return contentFields().concat(['slug', 'isBreaking', 'isFeatured', 'reporterId', 'reporterUid', 'reporterName']);
     }
 
+    // Same shape as shared isValidSlug(): letters/marks/digits in hyphen-separated runs, no URL characters.
+    function validSlug(v) {
+      return v is string && v.size() > 0 && v.size() <= 100 && v.matches('^[^-/?#%&\\s<>"\'\\\\.]+(-[^-/?#%&\\s<>"\'\\\\.]+)*$');
+    }
+
     function validNewsContent(d) {
       return d.headline is string && d.headline.size() > 0 && d.headline.size() <= 200
+        && (!('slug' in d) || validSlug(d.slug))
         && (!('summary' in d) || (d.summary is string && d.summary.size() <= 500))
         && (!('content' in d) || (d.content is string && d.content.size() <= 50000))
         && (!('tags' in d) || (d.tags is list && d.tags.size() <= 15))
@@ -59,7 +65,8 @@ service cloud.firestore {
 
     // ---------------------------------------------------------------- users
     match /users/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || canManageUsers() || canEditAnyNews());
+      // Own profile always (the panel shows a suspended user why they are locked out); others only to active staff.
+      allow read: if signedIn() && (request.auth.uid == uid || ((canManageUsers() || canEditAnyNews()) && isActiveStaff()));
       allow write: if false; // Managed by Cloud Functions.
     }
 
@@ -68,7 +75,8 @@ service cloud.firestore {
       function isAuthor() { return signedIn() && resource.data.reporterUid == request.auth.uid; }
 
       // Public feeds must query with where('status', '==', 'PUBLISHED').
-      allow read: if resource.data.status == 'PUBLISHED' || canEditAnyNews() || isAuthor();
+      // Unpublished news only to active staff, so a suspended account loses access at once.
+      allow read: if resource.data.status == 'PUBLISHED' || ((canEditAnyNews() || isAuthor()) && isActiveStaff());
 
       allow create: if canCreateNews()
         && isActiveStaff()
@@ -107,7 +115,7 @@ service cloud.firestore {
       function article() { return get(/databases/$(database)/documents/news/$(newsId)).data; }
       function isArticleAuthor() { return signedIn() && article().reporterUid == request.auth.uid; }
 
-      allow read: if canEditAnyNews() || isArticleAuthor();
+      allow read: if (canEditAnyNews() || isArticleAuthor()) && isActiveStaff();
       allow create, update: if isActiveStaff()
         && docId == 'sourceNotes'
         && request.resource.data.keys().hasOnly(['notes', 'updatedAt'])
@@ -215,7 +223,7 @@ service cloud.firestore {
     }
 
     match /advertisements/{id} {
-      allow read: if resource.data.isActive == true || canManageAds();
+      allow read: if resource.data.isActive == true || (canManageAds() && isActiveStaff());
       allow create: if canManageAds() && isActiveStaff()
         && validAd(request.resource.data)
         && request.resource.data.advertisementId == id
@@ -227,29 +235,29 @@ service cloud.firestore {
       allow delete: if canManageAds() && isActiveStaff();
 
       match /daily/{day} {
-        allow read: if canManageAds();
+        allow read: if canManageAds() && isActiveStaff();
         allow write: if false;
       }
     }
 
     // ------------------------------------------ editorial & distribution records
     match /editorialReviews/{id} {
-      allow read: if canEditAnyNews()
-        || (signedIn() && get(/databases/$(database)/documents/news/$(resource.data.newsId)).data.reporterUid == request.auth.uid);
+      allow read: if isActiveStaff() && (canEditAnyNews()
+        || get(/databases/$(database)/documents/news/$(resource.data.newsId)).data.reporterUid == request.auth.uid);
       allow write: if false; // Written by Cloud Functions alongside status changes.
     }
 
     match /notifications/{id} {
-      allow read: if canDistribute();
+      allow read: if canDistribute() && isActiveStaff();
       allow write: if false;
     }
 
     match /whatsappMessages/{id} {
-      allow read: if canDistribute();
+      allow read: if canDistribute() && isActiveStaff();
       allow write: if false;
 
       match /recipients/{recipientId} {
-        allow read: if canDistribute();
+        allow read: if canDistribute() && isActiveStaff();
         allow write: if false;
       }
     }
@@ -267,7 +275,7 @@ service cloud.firestore {
     }
 
     match /auditLogs/{id} {
-      allow read: if isSuperAdmin();
+      allow read: if isSuperAdmin() && isActiveStaff();
       allow write: if false;
     }
   }

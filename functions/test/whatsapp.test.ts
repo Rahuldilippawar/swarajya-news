@@ -6,7 +6,7 @@ import { db } from "../src/admin";
 import { previewWhatsAppBulletin, sendWhatsAppBulletin, type BulletinDeps } from "../src/whatsapp/bulletin";
 import { MetaCloudProvider, type WhatsAppProvider } from "../src/whatsapp/provider";
 import { addWhatsAppSubscribers, setWhatsAppSubscriberStatus } from "../src/whatsapp/subscribers";
-import { handleWebhook, verifySignature } from "../src/whatsapp/webhook";
+import { handleWebhook, verifySignature, verifyToken } from "../src/whatsapp/webhook";
 import type { Caller } from "../src/users";
 
 const smm: Caller = { uid: "smm", role: "SOCIAL_MEDIA_MANAGER" };
@@ -193,6 +193,13 @@ describe("webhook", () => {
     expect(verifySignature(Buffer.from('{"entry":[1]}'), sig, "app-secret")).toBe(false);
     expect(verifySignature(body, undefined, "app-secret")).toBe(false);
     expect(verifySignature(body, sig, "")).toBe(false);
+  });
+
+  it("checks the subscription verify token", () => {
+    expect(verifyToken("s3cret", "s3cret")).toBe(true);
+    expect(verifyToken("s3cres", "s3cret")).toBe(false);
+    expect(verifyToken(["s3cret"], "s3cret")).toBe(false);
+    expect(verifyToken("", "")).toBe(false);
   });
 });
 

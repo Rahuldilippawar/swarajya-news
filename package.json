@@ -26,6 +26,12 @@
     "test:rules": "npm run test:rules -w tests/rules"
   },
   "devDependencies": {
-    "firebase-tools": "14.27.0"
+    "firebase-tools": "14.27.0",
+    "postcss": "8.5.30"
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "@grpc/grpc-js": "1.14.6",
+    "uuid": "11.1.1"
   }
 }

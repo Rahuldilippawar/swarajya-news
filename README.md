@@ -25,7 +25,7 @@ Reporter submits → Editor reviews → Editor approves → Published on website
 | `panel-kit` | Firebase client, auth state, role guard and login form shared by both panels | React |
 | `tests/rules` | Firestore Security Rules tests (run against the emulator) | Vitest |
 | `firestore.rules`, `storage.rules`, `firestore.indexes.json` | Backend security and indexes | — |
-| `docs/` | Architecture, setup and milestone notes | — |
+| `docs/` | Architecture, setup, security, operations and milestone notes | — |
 
 ## Prerequisites
 
@@ -84,11 +84,14 @@ role, and frontend route guards are a convenience, not the protection.
 - No client can change an article's `status`. Every editorial transition goes through Cloud Functions, which enforce the workflow in `shared/src/newsStatus.ts` and write the audit log.
 - Secrets (WhatsApp token, service accounts) live in Cloud Secret Manager, never in Firestore, `.env` files in git, or client code.
 
-- Suspended staff lose write access immediately (rules check `users/{uid}.status`), not just when their token expires.
+- Suspended staff lose access immediately (rules check `users/{uid}.status`), not just when their token expires.
+
+The role matrix, public endpoint protections and tests are in [docs/SECURITY.md](docs/SECURITY.md); backups,
+restore drills, monitoring and costs in [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
 The first Super Admin is created with an Admin-SDK script that only project owners can run; every other account
 is created from the Admin Panel. See [docs/SETUP.md](docs/SETUP.md#2-create-the-first-super-admin).
 
 ## Status
 
-Milestones 1–10 (setup, roles, news management, reporter workflow, editorial approval, public website, Android app, push notifications, WhatsApp, ads and reports) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.
+Milestones 1–11 (setup, roles, news management, reporter workflow, editorial approval, public website, Android app, push notifications, WhatsApp, ads and reports, security and testing) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.

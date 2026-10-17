@@ -11,6 +11,14 @@ export function verifySignature(rawBody: Buffer, header: string | undefined, app
   return expected.length === given.length && timingSafeEqual(expected, given);
 }
 
+/** Constant-time check of the subscription verify token Meta echoes back. */
+export function verifyToken(given: unknown, expected: string): boolean {
+  if (!expected || typeof given !== "string") return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 interface StatusUpdate {
   id: string;
   status: string;

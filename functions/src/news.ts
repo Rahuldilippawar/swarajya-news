@@ -3,6 +3,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import {
   canTransition,
   COLLECTIONS,
+  isValidSlug,
   NEWS_STATUSES,
   newsSlug,
   parseYouTubeUrl,
@@ -119,7 +120,8 @@ export async function transitionNews(
       update.approvedAt = FieldValue.serverTimestamp();
     }
     if (to === "PUBLISHED") {
-      const clash = slug
+      // A missing, malformed (clients set the draft slug) or duplicate slug gets a fresh one.
+      const clash = slug && isValidSlug(slug)
         ? (await tx.get(db.collection(COLLECTIONS.news).where("slug", "==", slug).limit(2))).docs.some((d) => d.id !== newsId)
         : true;
       if (clash) slug = newsSlug(doc.headline);

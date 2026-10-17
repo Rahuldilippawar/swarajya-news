@@ -172,6 +172,13 @@ describe("transitionNews", () => {
     expect((await read()).slug).toBe(res.slug);
   });
 
+  it("replaces a malformed slug when publishing", async () => {
+    await seedNews("APPROVED", { slug: "x?y#z" });
+    const res = await transitionNews(editor, { newsId: "n1", to: "PUBLISHED" }, deps());
+    expect(res.slug).not.toBe("x?y#z");
+    expect(res.slug).toMatch(/^[\p{L}\p{M}\p{N}-]+$/u);
+  });
+
   it("rejects bad input", async () => {
     await expectCode(transitionNews(editor, { newsId: "n1", to: "LIVE" }, deps()), "invalid-argument");
     await expectCode(transitionNews(editor, { newsId: "missing", to: "UNDER_REVIEW" }, deps()), "not-found");

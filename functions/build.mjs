@@ -11,6 +11,7 @@ await build({
     index: "src/index.ts",
     "scripts/setRole": "src/scripts/setRole.ts",
     "scripts/seed": "src/scripts/seed.ts",
+    "scripts/verifyRestore": "src/scripts/verifyRestore.ts",
   },
   outdir: "lib",
   bundle: true,

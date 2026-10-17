@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newsSlug, slugify, slugWithSuffix, taxonomySlug } from "../src/slug";
+import { isValidSlug, newsSlug, slugify, slugWithSuffix, taxonomySlug } from "../src/slug";
 
 describe("slugify", () => {
   it("handles English headlines", () => {
@@ -34,5 +34,15 @@ describe("generated slugs", () => {
   it("prefers the English name for taxonomy", () => {
     expect(taxonomySlug("पुणे", "Pune")).toBe("pune");
     expect(taxonomySlug("पुणे", "  ")).toBe("पुणे");
+  });
+});
+
+describe("isValidSlug", () => {
+  it("accepts what slugify produces", () => {
+    for (const s of [newsSlug("पुण्यात मुसळधार पाऊस"), "heavy-rain-k3x9a", slugify("शेतकरी आंदोलन 2026")]) expect(isValidSlug(s)).toBe(true);
+  });
+
+  it("rejects URL-breaking or empty slugs", () => {
+    for (const s of ["", "a/b", "../x", "x?y", "x#y", "a b", "-a", "a-", "a--b", "x".repeat(101), "<script>"]) expect(isValidSlug(s)).toBe(false);
   });
 });

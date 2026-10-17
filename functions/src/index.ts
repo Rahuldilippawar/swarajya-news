@@ -9,11 +9,12 @@ import * as notifications from "./notifications";
 import * as users from "./users";
 import { recordView as countView } from "./views";
 import { recordAdEvent as countAdEvent } from "./ads";
+import { clientIp, RateLimiter } from "./rateLimit";
 import * as reports from "./reports";
 import * as bulletin from "./whatsapp/bulletin";
 import { MetaCloudProvider } from "./whatsapp/provider";
 import * as subscribers from "./whatsapp/subscribers";
-import { handleWebhook, verifySignature } from "./whatsapp/webhook";
+import { handleWebhook, verifySignature, verifyToken } from "./whatsapp/webhook";
 
 setGlobalOptions({ region: REGION, maxInstances: 10 });
 
@@ -33,9 +34,18 @@ export const transitionNews = callable("transitionNews", (caller, data) => news.
  * Public view counter used by the website (one call per article per browser
  * session). Always answers 204 so callers learn nothing about unpublished articles.
  */
+// Per-instance limits on the public counters: generous for a real reader, useless to a script.
+const viewLimiter = new RateLimiter(60, 60_000);
+const adLimiter = new RateLimiter(120, 60_000);
+
 export const recordView = onRequest({ cors: true, maxInstances: 5 }, async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).end();
+    return;
+  }
+  // Over the limit: answer as usual so the client learns nothing, but count nothing.
+  if (!viewLimiter.allow(clientIp(req))) {
+    res.status(204).end();
     return;
   }
   try {
@@ -86,7 +96,7 @@ export const sendWhatsAppBulletin = callable(
 /** Meta webhook: GET verifies the subscription; POST carries delivery receipts and STOP/START replies. */
 export const whatsappWebhook = onRequest({ secrets: [WHATSAPP_APP_SECRET, WHATSAPP_VERIFY_TOKEN] }, async (req, res) => {
   if (req.method === "GET") {
-    const ok = req.query["hub.mode"] === "subscribe" && req.query["hub.verify_token"] === WHATSAPP_VERIFY_TOKEN.value();
+    const ok = req.query["hub.mode"] === "subscribe" && verifyToken(req.query["hub.verify_token"], WHATSAPP_VERIFY_TOKEN.value());
     res.status(ok ? 200 : 403).send(ok ? String(req.query["hub.challenge"] ?? "") : "forbidden");
     return;
   }
@@ -118,6 +128,10 @@ export const whatsappWebhook = onRequest({ secrets: [WHATSAPP_APP_SECRET, WHATSA
 export const recordAdEvent = onRequest({ cors: true, maxInstances: 10 }, async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).end();
+    return;
+  }
+  if (!adLimiter.allow(clientIp(req))) {
+    res.status(204).end();
     return;
   }
   try {
