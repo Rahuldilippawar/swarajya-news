@@ -1,6 +1,6 @@
 "use client";
 
-import { errorMessage, getFirebase, useAuth } from "@swarajya/panel-kit";
+import { errorMessage, getFirebase, useAuth, useChildLocations } from "@swarajya/panel-kit";
 import {
   CHILD_LOCATION_TYPE,
   COLLECTIONS,
@@ -12,7 +12,6 @@ import {
 } from "@swarajya/shared";
 import { collection, doc, getDocs, limit, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
 import { useState, type FormEvent } from "react";
-import { useChildLocations } from "@/lib/taxonomy";
 
 const PLURAL: Record<LocationType, string> = { STATE: "States", DISTRICT: "Districts", TALUKA: "Talukas", VILLAGE: "Villages / Cities" };
 

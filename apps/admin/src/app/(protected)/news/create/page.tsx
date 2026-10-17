@@ -1,6 +1,6 @@
 "use client";
 
-import { NewsForm } from "@/components/news/NewsForm";
+import { NewsForm } from "@swarajya/panel-kit";
 
 export default function CreateNewsPage() {
   return <NewsForm news={null} />;

@@ -1,10 +1,9 @@
 "use client";
 
-import { errorMessage, getFirebase, useAuth } from "@swarajya/panel-kit";
+import { errorMessage, getFirebase, useAuth, useCategories } from "@swarajya/panel-kit";
 import { COLLECTIONS, hasPermission, taxonomySlug, type CategoryDoc } from "@swarajya/shared";
 import { doc, runTransaction, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useState, type FormEvent } from "react";
-import { useCategories } from "@/lib/taxonomy";
 
 export default function CategoriesPage() {
   const { role } = useAuth();

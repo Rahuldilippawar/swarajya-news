@@ -126,6 +126,7 @@ describe("transitionNews", () => {
     await transitionNews(editor, { newsId: "n1", to: "CHANGES_REQUESTED", remarks: "Add the taluka name." }, deps());
     const review = (await db.collection("editorialReviews").where("newsId", "==", "n1").get()).docs[0]!;
     expect(review.data()).toMatchObject({ action: "REQUEST_CHANGES", remarks: "Add the taluka name.", reviewerId: "ed" });
+    expect((await read()).lastReview).toMatchObject({ action: "REQUEST_CHANGES", remarks: "Add the taluka name.", reviewerId: "ed" });
   });
 
   it("blocks publishing when the video is unavailable", async () => {

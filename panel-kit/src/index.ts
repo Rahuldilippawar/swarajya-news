@@ -5,3 +5,6 @@ export { LoginForm } from "./LoginForm";
 export { PanelShell, type NavItem } from "./PanelShell";
 export { RequireRole } from "./RequireRole";
 export { useLiveDoc, useLiveQuery, type LiveResult } from "./useLiveQuery";
+export { NewsForm } from "./news/NewsForm";
+export { StatusBadge } from "./news/StatusBadge";
+export { selectable, useCategories, useChildLocations, useLocationsOfType } from "./taxonomy";

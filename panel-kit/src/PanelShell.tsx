@@ -16,6 +16,12 @@ export interface NavItem {
 export function PanelShell({ title, nav, children }: { title: string; nav: readonly NavItem[]; children: ReactNode }) {
   const pathname = usePathname();
   const { user, role } = useAuth();
+  const visible = nav.filter((item) => !item.permission || hasPermission(role, item.permission));
+  // Highlight the most specific match, so /news/create does not also light up /news.
+  const current = visible
+    .map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
 
   return (
     <div className="panel-shell">
@@ -25,8 +31,8 @@ export function PanelShell({ title, nav, children }: { title: string; nav: reado
           <span>{title}</span>
         </div>
         <nav>
-          {nav.filter((item) => !item.permission || hasPermission(role, item.permission)).map((item) => (
-            <Link key={item.href} href={item.href} aria-current={pathname.startsWith(item.href) ? "page" : undefined}>
+          {visible.map((item) => (
+            <Link key={item.href} href={item.href} aria-current={item.href === current ? "page" : undefined}>
               {item.label}
             </Link>
           ))}

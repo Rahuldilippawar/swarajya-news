@@ -5,7 +5,7 @@
 | 1 | Project setup | ✅ Done |
 | 2 | Authentication and roles | ✅ Done |
 | 3 | Firestore and news management | ✅ Done |
-| 4 | Reporter workflow | 🟡 Backend ready |
+| 4 | Reporter workflow | ✅ Done |
 | 5 | Editorial approval | 🟡 Backend and editor actions ready |
 | 6 | Public website | ⬜ |
 | 7 | Flutter Android app | ⬜ |
@@ -71,13 +71,30 @@ Acceptance: *admin can create and manage draft news* — met, and checked end to
 - **Reporter location assignment** on the Staff page; reporters see their district names on their profile.
 - Callable functions now also refuse callers whose profile is not ACTIVE.
 
+## Milestone 4 — Reporter workflow ✅
+
+Acceptance: *a reporter can submit news and track its status* — met, and checked end to end in a browser
+(reporter submits → editor requests changes → reporter sees the remarks, corrects and resubmits → editor publishes).
+
+- Reporter Panel → **Submit news**: the same editor as the Admin Panel, without editor-only controls
+  (reporter picker, breaking/featured, SEO). The reporter's first assigned district is preselected.
+- New fields: **news date & time** (when the event happened) and **private source notes**, stored in
+  `news/{id}/private/sourceNotes` so they stay hidden from the public even after publication.
+- Reporters can edit only while an article is a draft or returned for changes; otherwise it opens read-only with an
+  explanation. Drafts can be deleted.
+- **My News**: the reporter's own articles with a status filter, editor remarks for returned/rejected stories, paging.
+- **Dashboard**: counts for drafts, pending review, returned, approved, published and rejected (each links to the
+  filtered list), plus a banner when stories are returned for changes.
+- The latest editor decision and remarks are stored on the article (`lastReview`, server-written) so lists show them
+  without extra reads; the full history remains in `editorialReviews`.
+- The news editor, taxonomy hooks and status badge moved into `panel-kit`, shared by both panels.
+
 ## Already in place for later milestones
 
-- **M4 / M5:** the workflow function already supports reporter submission and resubmission, editor review,
-  request-changes with remarks, reject, approve, publish, unpublish and archive. Editors can already run every step
-  from the news editor. What remains is the Reporter Panel screens and the Pending Approval queue.
+- **M5:** editors can already run every workflow step from the news editor; the workflow function enforces who may
+  approve and publish and records reviews and audit logs. What remains is the Pending Approval queue.
 
-## Next: Milestone 4 — Reporter workflow
+## Next: Milestone 5 — Editorial approval
 
-- Reporter Panel: "My News" list, create/edit drafts (reusing the editor), submit, see editor remarks, correct and resubmit.
-- Reporter dashboard counts for their own submissions.
+- Pending Approval page: submitted and under-review stories, oldest first, with quick review actions.
+- Audit log viewer for the Super Admin.

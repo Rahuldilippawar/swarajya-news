@@ -139,3 +139,6 @@ textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .panel-preview { font-family: "Noto Sans Devanagari", "Mukta", system-ui, sans-serif; line-height: 1.7; }
 .panel-preview h1 { font-size: 1.6rem; margin-bottom: 4px; }
 .panel-preview .lead { font-weight: 600; color: var(--muted); }
+.panel-callout[data-tone="warn"] { border-left-color: #c77700; background: #fff6e5; }
+.panel-callout[data-tone="danger"] { border-left-color: var(--danger); background: #fdecea; }
+fieldset:disabled .panel-thumb { opacity: 0.9; }

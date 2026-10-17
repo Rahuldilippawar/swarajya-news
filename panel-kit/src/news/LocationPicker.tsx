@@ -1,6 +1,6 @@
 "use client";
 
-import { selectable, useChildLocations, useLocationsOfType } from "@/lib/taxonomy";
+import { selectable, useChildLocations, useLocationsOfType } from "../taxonomy";
 
 export interface LocationValue {
   districtId: string;

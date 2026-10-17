@@ -41,6 +41,11 @@ DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED → PUBLISHED → ARCHIVED
   cannot be changed until it is unpublished.
 - Every callable function also requires the caller's profile to be ACTIVE, so a suspended user's unexpired token is useless.
 
+## Private data on public documents
+
+A published article is world-readable, so anything confidential must live elsewhere. Reporters' source notes are in
+`news/{id}/private/sourceNotes`, readable only by the article's reporter and editors.
+
 ## Taxonomy
 
 - Categories use their slug as document ID (`categories/politics`), so URLs are stable and unique.

@@ -1,9 +1,8 @@
 "use client";
 
-import { callFunction, errorMessage } from "@swarajya/panel-kit";
+import { callFunction, errorMessage, useLocationsOfType } from "@swarajya/panel-kit";
 import { canManageRole, ROLE_LABELS, ROLES, type Role } from "@swarajya/shared";
 import { useMemo, useState } from "react";
-import { useLocationsOfType } from "@/lib/taxonomy";
 import { AssignLocations } from "./AssignLocations";
 import type { StaffRow } from "./useStaff";
 

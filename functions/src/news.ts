@@ -130,6 +130,12 @@ export async function transitionNews(
 
     const action = reviewActionFor(from, to);
     if (action) {
+      update.lastReview = {
+        action,
+        reviewerId: caller.uid,
+        at: FieldValue.serverTimestamp(),
+        ...(remarks ? { remarks } : {}),
+      };
       const reviewRef = db.collection(COLLECTIONS.editorialReviews).doc();
       tx.set(reviewRef, {
         reviewId: reviewRef.id,

@@ -1,5 +1,5 @@
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, setLogLevel, updateDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, setLogLevel, Timestamp, updateDoc, where } from "firebase/firestore";
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
@@ -132,6 +132,54 @@ describe("news", () => {
     await assertFails(deleteDoc(doc(as("rep2", "REPORTER"), "news/d")));
     await assertFails(deleteDoc(doc(as("rep1", "REPORTER"), "news/s")));
     await assertSucceeds(deleteDoc(doc(as("rep1", "REPORTER"), "news/d")));
+  });
+});
+
+describe("reporter workflow", () => {
+  it("lets a reporter list only their own news", async () => {
+    await seed("news/mine", draft("mine", "rep1"));
+    const db = as("rep1", "REPORTER");
+    await assertSucceeds(getDocs(query(collection(db, "news"), where("reporterUid", "==", "rep1"))));
+    await assertFails(getDocs(query(collection(db, "news"), where("reporterUid", "==", "rep2"))));
+    await assertFails(getDocs(collection(db, "news")));
+  });
+
+  it("lets a reporter read the review history of their own article only", async () => {
+    await seed("news/n", draft("n", "rep1"));
+    await seed("editorialReviews/r", { newsId: "n", action: "REQUEST_CHANGES", remarks: "x" });
+    await assertSucceeds(getDocs(query(collection(as("rep1", "REPORTER"), "editorialReviews"), where("newsId", "==", "n"))));
+    await assertFails(getDocs(query(collection(as("rep2", "REPORTER"), "editorialReviews"), where("newsId", "==", "n"))));
+  });
+
+  it("accepts an event time but not lastReview from clients", async () => {
+    const db = as("rep1", "REPORTER");
+    await assertSucceeds(setDoc(doc(db, "news/a"), { ...draft("a", "rep1"), eventAt: Timestamp.now() }));
+    await assertFails(setDoc(doc(db, "news/b"), { ...draft("b", "rep1"), eventAt: "yesterday" }));
+    await assertFails(updateDoc(doc(db, "news/a"), { lastReview: { action: "APPROVE" }, updatedAt: serverTimestamp() }));
+  });
+});
+
+const notes = (text: string) => ({ notes: text, updatedAt: serverTimestamp() });
+
+describe("private source notes", () => {
+  it("are readable by the author and editors, never the public — even after publication", async () => {
+    await seed("news/p", { ...draft("p", "rep1"), status: "PUBLISHED" });
+    await seed("news/p/private/sourceNotes", { notes: "Informant: …" });
+    await assertSucceeds(getDoc(doc(as("rep1", "REPORTER"), "news/p/private/sourceNotes")));
+    await assertSucceeds(getDoc(doc(as("ed", "EDITOR"), "news/p/private/sourceNotes")));
+    await assertFails(getDoc(doc(as("rep2", "REPORTER"), "news/p/private/sourceNotes")));
+    await assertFails(getDoc(doc(anon(), "news/p/private/sourceNotes")));
+  });
+
+  it("can be written by the author only while the article is editable by them", async () => {
+    await seed("news/d", draft("d", "rep1"));
+    await seed("news/s", { ...draft("s", "rep1"), status: "SUBMITTED" });
+    const db = as("rep1", "REPORTER");
+    await assertSucceeds(setDoc(doc(db, "news/d/private/sourceNotes"), notes("Spoke to the sarpanch")));
+    await assertFails(setDoc(doc(db, "news/s/private/sourceNotes"), notes("late edit")));
+    await assertFails(setDoc(doc(as("rep2", "REPORTER"), "news/d/private/sourceNotes"), notes("not mine")));
+    await assertFails(setDoc(doc(db, "news/d/private/other"), notes("wrong doc")));
+    await assertSucceeds(setDoc(doc(as("ed", "EDITOR"), "news/s/private/sourceNotes"), notes("editor note")));
   });
 });
 

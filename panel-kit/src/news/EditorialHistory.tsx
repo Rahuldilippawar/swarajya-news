@@ -1,6 +1,7 @@
 "use client";
 
-import { getFirebase, useLiveQuery } from "@swarajya/panel-kit";
+import { getFirebase } from "../firebase";
+import { useLiveQuery } from "../useLiveQuery";
 import { COLLECTIONS, type EditorialReviewDoc } from "@swarajya/shared";
 import { collection, orderBy, query, where } from "firebase/firestore";
 

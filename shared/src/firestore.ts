@@ -18,6 +18,18 @@ export const COLLECTIONS = {
   counters: "counters",
 } as const;
 
+/**
+ * Private notes for an article live in news/{newsId}/private/sourceNotes so
+ * they are never exposed when the article itself becomes public.
+ */
+export const NEWS_PRIVATE_SUBCOLLECTION = "private";
+export const SOURCE_NOTES_DOC_ID = "sourceNotes";
+
+export interface SourceNotesDoc {
+  notes: string;
+  updatedAt: TimestampLike;
+}
+
 /** The single document in `appSettings` that holds public site configuration. */
 export const APP_SETTINGS_DOC_ID = "public";
 
@@ -70,6 +82,10 @@ export interface NewsDoc {
   seoTitle?: string;
   seoDescription?: string;
   viewCount: number;
+  /** When the reported event happened (entered by the reporter). */
+  eventAt?: TimestampLike;
+  /** Latest editor decision, kept on the article so lists can show remarks without extra reads. Server-written. */
+  lastReview?: { action: ReviewAction; remarks?: string; reviewerId: string; at: TimestampLike };
   submittedAt?: TimestampLike;
   approvedBy?: string;
   approvedAt?: TimestampLike;

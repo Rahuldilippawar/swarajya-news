@@ -1,10 +1,9 @@
 "use client";
 
-import { getFirebase, useLiveDoc } from "@swarajya/panel-kit";
+import { getFirebase, NewsForm, useLiveDoc } from "@swarajya/panel-kit";
 import { COLLECTIONS, type NewsDoc } from "@swarajya/shared";
 import { doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
-import { NewsForm } from "@/components/news/NewsForm";
 
 export default function EditNewsPage() {
   const { id } = useParams<{ id: string }>();

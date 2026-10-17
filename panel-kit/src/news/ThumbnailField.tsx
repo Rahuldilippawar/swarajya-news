@@ -1,6 +1,8 @@
 "use client";
 
-import { errorMessage, getFirebase, useAuth } from "@swarajya/panel-kit";
+import { useAuth } from "../AuthProvider";
+import { getFirebase } from "../firebase";
+import { errorMessage } from "../functions";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useRef, useState } from "react";
 

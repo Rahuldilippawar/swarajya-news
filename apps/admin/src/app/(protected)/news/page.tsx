@@ -1,12 +1,10 @@
 "use client";
 
-import { getFirebase, useAuth, useLiveQuery } from "@swarajya/panel-kit";
+import { getFirebase, StatusBadge, useAuth, useCategories, useLiveQuery, useLocationsOfType } from "@swarajya/panel-kit";
 import { COLLECTIONS, hasPermission, NEWS_STATUS_LABELS, NEWS_STATUSES, type NewsDoc, type NewsStatus } from "@swarajya/shared";
 import { collection, limit, orderBy, query, where } from "firebase/firestore";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { StatusBadge } from "@/components/news/StatusBadge";
-import { useCategories, useLocationsOfType } from "@/lib/taxonomy";
 
 const PAGE_SIZE = 25;
 

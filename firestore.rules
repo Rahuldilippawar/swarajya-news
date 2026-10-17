@@ -36,7 +36,7 @@ service cloud.firestore {
     // Fields an author may write while the article is a draft or was returned for changes.
     function contentFields() {
       return ['headline', 'summary', 'content', 'categoryId', 'districtId', 'talukaId', 'villageId',
-              'thumbnailUrl', 'youtubeUrl', 'youtubeVideoId', 'videoProvider', 'tags',
+              'thumbnailUrl', 'youtubeUrl', 'youtubeVideoId', 'videoProvider', 'tags', 'eventAt',
               'seoTitle', 'seoDescription', 'updatedAt'];
     }
     // Additional presentation fields only editors may change.
@@ -49,6 +49,7 @@ service cloud.firestore {
         && (!('summary' in d) || (d.summary is string && d.summary.size() <= 500))
         && (!('content' in d) || (d.content is string && d.content.size() <= 50000))
         && (!('tags' in d) || (d.tags is list && d.tags.size() <= 15))
+        && (!('eventAt' in d) || d.eventAt is timestamp)
         && (!('youtubeVideoId' in d) || d.youtubeVideoId == null
             || (d.youtubeVideoId is string && d.youtubeVideoId.matches('^[A-Za-z0-9_-]{11}$')))
         && (!('thumbnailUrl' in d) || d.thumbnailUrl == null
@@ -97,6 +98,24 @@ service cloud.firestore {
         );
 
       allow delete: if isAuthor() && isActiveStaff() && resource.data.status == 'DRAFT';
+    }
+
+    // Private source notes: visible to the article's reporter and editors only,
+    // even after the article is published. The author may edit them while the
+    // article is editable by them; editors at any time.
+    match /news/{newsId}/private/{docId} {
+      function article() { return get(/databases/$(database)/documents/news/$(newsId)).data; }
+      function isArticleAuthor() { return signedIn() && article().reporterUid == request.auth.uid; }
+
+      allow read: if canEditAnyNews() || isArticleAuthor();
+      allow create, update: if isActiveStaff()
+        && docId == 'sourceNotes'
+        && request.resource.data.keys().hasOnly(['notes', 'updatedAt'])
+        && request.resource.data.notes is string
+        && request.resource.data.notes.size() <= 2000
+        && request.resource.data.updatedAt == request.time
+        && (canEditAnyNews() || (isArticleAuthor() && article().status in ['DRAFT', 'CHANGES_REQUESTED']));
+      allow delete: if false;
     }
 
     // ------------------------------------------------------ taxonomy & settings
