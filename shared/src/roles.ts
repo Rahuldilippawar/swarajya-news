@@ -63,3 +63,30 @@ export const ADMIN_PANEL_ROLES: readonly Role[] = ["SUPER_ADMIN", "OWNER", "EDIT
 
 export const USER_STATUSES = ["ACTIVE", "SUSPENDED"] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
+
+/** Roles an OWNER may create and manage. Only SUPER_ADMIN can manage OWNER and SUPER_ADMIN accounts. */
+const OWNER_MANAGEABLE_ROLES: readonly Role[] = ["EDITOR", "REPORTER", "SOCIAL_MEDIA_MANAGER"];
+
+/**
+ * Whether `actor` may create, change or suspend an account holding `target`.
+ * Callers must check this for both the account's current role and any new
+ * role, so an OWNER can neither promote someone to SUPER_ADMIN nor demote one.
+ */
+export function canManageRole(actor: Role | null | undefined, target: Role): boolean {
+  if (actor === "SUPER_ADMIN") return true;
+  if (actor === "OWNER") return OWNER_MANAGEABLE_ROLES.includes(target);
+  return false;
+}
+
+export const ROLE_LABELS: Record<Role, string> = {
+  SUPER_ADMIN: "Super Admin",
+  OWNER: "Owner / Management",
+  EDITOR: "Editor",
+  REPORTER: "Reporter",
+  SOCIAL_MEDIA_MANAGER: "Social Media Manager",
+};
+
+/** Reporter IDs look like SN-R-0001. */
+export function formatReporterId(sequence: number): string {
+  return `SN-R-${String(sequence).padStart(4, "0")}`;
+}

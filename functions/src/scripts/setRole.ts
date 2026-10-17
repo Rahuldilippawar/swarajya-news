@@ -11,9 +11,9 @@
  * FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 and GCLOUD_PROJECT instead.
  */
 import { parseArgs } from "node:util";
-import { FieldValue } from "firebase-admin/firestore";
-import { COLLECTIONS, isRole, ROLES } from "@swarajya/shared";
-import { auth, db, writeAuditLog } from "../admin";
+import { isRole, ROLES } from "@swarajya/shared";
+import { auth } from "../admin";
+import { applyRole } from "../users";
 
 async function main() {
   const { values } = parseArgs({
@@ -24,35 +24,11 @@ async function main() {
     throw new Error(`Usage: --email <email> --role <${ROLES.join("|")}> [--name "Full Name"]`);
   }
 
-  const user = await auth.getUserByEmail(email);
-  await auth.setCustomUserClaims(user.uid, { ...user.customClaims, role });
-  // Force existing sessions to pick up the new role on their next token refresh.
-  await auth.revokeRefreshTokens(user.uid);
+  let user = await auth.getUserByEmail(email);
+  if (name) user = await auth.updateUser(user.uid, { displayName: name });
+  const { reporterId } = await applyRole(user, role, "cli:set-role");
 
-  const ref = db.collection(COLLECTIONS.users).doc(user.uid);
-  const existing = await ref.get();
-  await ref.set(
-    {
-      uid: user.uid,
-      email,
-      fullName: name ?? existing.get("fullName") ?? user.displayName ?? email,
-      role,
-      status: "ACTIVE",
-      assignedLocations: existing.get("assignedLocations") ?? [],
-      updatedAt: FieldValue.serverTimestamp(),
-      ...(existing.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
-    },
-    { merge: true },
-  );
-  await writeAuditLog({
-    actorId: "cli:set-role",
-    action: "USER_ROLE_SET",
-    targetType: "user",
-    targetId: user.uid,
-    relevantMetadata: { role, previousRole: user.customClaims?.role ?? null },
-  });
-
-  console.log(`Set role ${role} for ${email} (${user.uid}).`);
+  console.log(`Set role ${role} for ${email} (${user.uid})${reporterId ? `, reporter ID ${reporterId}` : ""}.`);
 }
 
 main().catch((err) => {

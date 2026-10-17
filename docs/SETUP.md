@@ -57,13 +57,29 @@ FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:808
   npm run set-role -w functions -- --email admin@example.com --role SUPER_ADMIN
 ```
 
-## 3. Android package ID
+## 3. Adding staff
+
+After the first Super Admin exists, all other accounts are created from the
+Admin Panel → **Staff & Reporters**. The panel shows a one-time password setup
+link; send it to the person privately (anyone holding it can set the
+password). Suspending an account takes effect immediately.
+
+## 4. App Check
+
+1. In Google Cloud, create a **reCAPTCHA Enterprise** key for the panel domains.
+2. Firebase console → **App Check** → register each web app with that key, and the Android app with Play Integrity.
+3. Set `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` in each panel's environment and redeploy.
+4. Watch the App Check metrics until all traffic is verified, then:
+   - set `ENFORCE_APP_CHECK=true` in `functions/.env.<project>` and redeploy functions;
+   - enforce App Check for Firestore and Storage in the console.
+
+## 5. Android package ID
 
 The app is generated with the application ID `com.swarajyanews.swarajya_news`
 (`apps/android/android/app/build.gradle.kts`). **Confirm the final ID before the
 first Play Store upload** — it can never change afterwards.
 
-## 4. Secrets
+## 6. Secrets
 
 | Secret | Where it lives |
 | --- | --- |
@@ -71,7 +87,7 @@ first Play Store upload** — it can never change afterwards.
 | Service-account keys | Never in the repo. Only used locally for provisioning. |
 | WhatsApp Business API token, YouTube Data API key | `npx firebase functions:secrets:set NAME` (Cloud Secret Manager) |
 
-## 5. Hosting
+## 7. Hosting
 
 The Next.js apps can be deployed to Firebase App Hosting or any Next.js host
 (e.g. Vercel). Use separate sites/domains, for example:

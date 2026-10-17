@@ -64,7 +64,7 @@ To work fully offline against the Firebase emulators, set
 ```bash
 npm run lint          # ESLint for the Next.js apps
 npm run typecheck     # TypeScript in every workspace
-npm test              # unit tests (shared domain logic)
+npm test              # unit tests + Cloud Functions tests (starts the Auth/Firestore emulators)
 npm run test:rules    # Firestore Security Rules tests (starts the emulator)
 npm run build         # production builds of all web apps + functions bundle
 
@@ -84,8 +84,11 @@ role, and frontend route guards are a convenience, not the protection.
 - No client can change an article's `status`. Every editorial transition goes through Cloud Functions, which enforce the workflow in `shared/src/newsStatus.ts` and write the audit log.
 - Secrets (WhatsApp token, service accounts) live in Cloud Secret Manager, never in Firestore, `.env` files in git, or client code.
 
-The first Super Admin is created with an Admin-SDK script that only project owners can run. See [docs/SETUP.md](docs/SETUP.md#create-the-first-super-admin).
+- Suspended staff lose write access immediately (rules check `users/{uid}.status`), not just when their token expires.
+
+The first Super Admin is created with an Admin-SDK script that only project owners can run; every other account
+is created from the Admin Panel. See [docs/SETUP.md](docs/SETUP.md#2-create-the-first-super-admin).
 
 ## Status
 
-Milestone 1 (project setup) is complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.
+Milestones 1 (project setup) and 2 (authentication and roles) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.

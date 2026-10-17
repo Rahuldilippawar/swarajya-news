@@ -52,6 +52,19 @@ DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED → PUBLISHED → ARCHIVED
 Source of truth: `shared/src/roles.ts`. `firestore.rules` mirrors it; the rules
 tests in `tests/rules` check the important cases.
 
+## Cloud Functions
+
+| Function | Who may call it | What it does |
+| --- | --- | --- |
+| `createStaffUser` | SUPER_ADMIN, OWNER* | Creates the Auth account, role claim, profile, reporter ID; returns a password setup link |
+| `setStaffRole` | SUPER_ADMIN, OWNER* | Changes a role and signs the user out everywhere |
+| `setStaffStatus` | SUPER_ADMIN, OWNER* | Suspends or reactivates an account |
+| `updateStaffProfile` | SUPER_ADMIN, OWNER* | Updates name and assigned locations |
+| `health` | anyone | Liveness check |
+
+\* OWNER may only manage EDITOR, REPORTER and SOCIAL_MEDIA_MANAGER accounts (`canManageRole`).
+Request/response types live in `shared/src/api.ts` and are used by both the panels and the functions.
+
 ## Shared code
 
 - `shared` is plain TypeScript with no SDK dependencies so it can be used by

@@ -13,6 +13,8 @@ export const COLLECTIONS = {
   advertisements: "advertisements",
   auditLogs: "auditLogs",
   appSettings: "appSettings",
+  // Server-only sequence counters (e.g. reporter IDs); no client access.
+  counters: "counters",
 } as const;
 
 /** The single document in `appSettings` that holds public site configuration. */

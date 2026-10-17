@@ -4,6 +4,7 @@ export * from "./youtube";
 export * from "./slug";
 export * from "./validation";
 export * from "./firestore";
+export * from "./api";
 
 export const CHANNEL = {
   name: "Swarajya News",

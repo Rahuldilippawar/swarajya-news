@@ -24,6 +24,13 @@ service cloud.firestore {
     function canDistribute() { return hasAnyRole(['SUPER_ADMIN', 'EDITOR', 'SOCIAL_MEDIA_MANAGER']); }
     function canManageAds() { return hasAnyRole(['SUPER_ADMIN', 'OWNER']); }
 
+    // Suspension takes effect at once: a token issued before suspension still
+    // carries the role claim, so writes also require users/{uid}.status == ACTIVE.
+    function isActiveStaff() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('status', '') == 'ACTIVE';
+    }
+
     function changedKeys() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
     // Fields an author may write while the article is a draft or was returned for changes.
@@ -62,6 +69,7 @@ service cloud.firestore {
       allow read: if resource.data.status == 'PUBLISHED' || canEditAnyNews() || isAuthor();
 
       allow create: if canCreateNews()
+        && isActiveStaff()
         && request.resource.data.keys().hasOnly(editorFields().concat(['newsId', 'status', 'viewCount', 'createdAt']))
         && request.resource.data.newsId == newsId
         && request.resource.data.status == 'DRAFT'
@@ -75,7 +83,8 @@ service cloud.firestore {
               && request.resource.data.get('isFeatured', false) == false))
         && validNewsContent(request.resource.data);
 
-      allow update: if validNewsContent(request.resource.data)
+      allow update: if isActiveStaff()
+        && validNewsContent(request.resource.data)
         && request.resource.data.updatedAt == request.time
         && (
           (canEditAnyNews() && changedKeys().hasOnly(editorFields()))
@@ -84,28 +93,28 @@ service cloud.firestore {
               && changedKeys().hasOnly(contentFields()))
         );
 
-      allow delete: if isAuthor() && resource.data.status == 'DRAFT';
+      allow delete: if isAuthor() && isActiveStaff() && resource.data.status == 'DRAFT';
     }
 
     // ------------------------------------------------------ taxonomy & settings
     match /categories/{id} {
       allow read: if resource.data.isActive == true || signedIn();
-      allow write: if isSuperAdmin();
+      allow write: if isSuperAdmin() && isActiveStaff();
     }
 
     match /locations/{id} {
       allow read: if resource.data.isActive == true || signedIn();
-      allow write: if isSuperAdmin();
+      allow write: if isSuperAdmin() && isActiveStaff();
     }
 
     match /appSettings/{id} {
       allow read: if true;
-      allow write: if isSuperAdmin();
+      allow write: if isSuperAdmin() && isActiveStaff();
     }
 
     match /advertisements/{id} {
       allow read: if resource.data.isActive == true || canManageAds();
-      allow write: if canManageAds();
+      allow write: if canManageAds() && isActiveStaff();
     }
 
     // ------------------------------------------ editorial & distribution records

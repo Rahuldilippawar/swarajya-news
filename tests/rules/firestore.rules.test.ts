@@ -16,7 +16,14 @@ beforeAll(async () => {
 });
 
 afterAll(() => env.cleanup());
-beforeEach(() => env.clearFirestore());
+
+// Staff used throughout; each has an ACTIVE profile unless a test changes it.
+const STAFF = { rep1: "REPORTER", rep2: "REPORTER", ed: "EDITOR", sa: "SUPER_ADMIN" } as const;
+
+beforeEach(async () => {
+  await env.clearFirestore();
+  for (const [uid, role] of Object.entries(STAFF)) await seed(`users/${uid}`, { uid, role, status: "ACTIVE" });
+});
 
 const as = (uid: string, role?: string) => env.authenticatedContext(uid, role ? { role } : {}).firestore();
 const anon = () => env.unauthenticatedContext().firestore();
@@ -114,18 +121,42 @@ describe("news", () => {
   });
 });
 
+describe("suspended staff", () => {
+  it("cannot write even while their old token still carries a role", async () => {
+    await seed("news/d", draft("d", "rep1"));
+    await seed("users/rep1", { uid: "rep1", role: "REPORTER", status: "SUSPENDED" });
+    const db = as("rep1", "REPORTER");
+
+    await assertFails(setDoc(doc(db, "news/n2"), draft("n2", "rep1")));
+    await assertFails(updateDoc(doc(db, "news/d"), { summary: "x", updatedAt: serverTimestamp() }));
+    await assertFails(deleteDoc(doc(db, "news/d")));
+  });
+
+  it("blocks a suspended super admin from editing categories", async () => {
+    await seed("users/sa", { uid: "sa", role: "SUPER_ADMIN", status: "SUSPENDED" });
+    await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "categories/c"), { name: "Politics", isActive: true }));
+  });
+
+  it("blocks staff whose profile document is missing", async () => {
+    await assertFails(setDoc(doc(as("ghost", "REPORTER"), "news/n"), draft("n", "ghost")));
+  });
+});
+
 describe("users and roles", () => {
   it("never lets a client write a user document (no self-promotion)", async () => {
-    await seed("users/rep1", { uid: "rep1", role: "REPORTER" });
     await assertFails(updateDoc(doc(as("rep1", "REPORTER"), "users/rep1"), { role: "SUPER_ADMIN" }));
     await assertFails(setDoc(doc(as("x"), "users/x"), { uid: "x", role: "SUPER_ADMIN" }));
   });
 
   it("lets users read their own profile but not others'", async () => {
-    await seed("users/rep1", { uid: "rep1" });
-    await seed("users/rep2", { uid: "rep2" });
     await assertSucceeds(getDoc(doc(as("rep1", "REPORTER"), "users/rep1")));
     await assertFails(getDoc(doc(as("rep1", "REPORTER"), "users/rep2")));
+  });
+
+  it("never exposes the server-side counters", async () => {
+    await seed("counters/reporterId", { next: 5 });
+    await assertFails(getDoc(doc(as("sa", "SUPER_ADMIN"), "counters/reporterId")));
+    await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "counters/reporterId"), { next: 1 }));
   });
 });
 

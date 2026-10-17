@@ -1,5 +1,6 @@
 "use client";
 
+import { hasPermission, type Permission } from "@swarajya/shared";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -8,6 +9,8 @@ import { logout, useAuth } from "./AuthProvider";
 export interface NavItem {
   href: string;
   label: string;
+  /** Hide the item from users without this permission. */
+  permission?: Permission;
 }
 
 export function PanelShell({ title, nav, children }: { title: string; nav: readonly NavItem[]; children: ReactNode }) {
@@ -22,7 +25,7 @@ export function PanelShell({ title, nav, children }: { title: string; nav: reado
           <span>{title}</span>
         </div>
         <nav>
-          {nav.map((item) => (
+          {nav.filter((item) => !item.permission || hasPermission(role, item.permission)).map((item) => (
             <Link key={item.href} href={item.href} aria-current={pathname.startsWith(item.href) ? "page" : undefined}>
               {item.label}
             </Link>

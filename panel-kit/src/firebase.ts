@@ -1,4 +1,5 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { connectAuthEmulator, getAuth, type Auth } from "firebase/auth";
 import { connectFirestoreEmulator, getFirestore, type Firestore } from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions, type Functions } from "firebase/functions";
@@ -14,6 +15,7 @@ const config = {
 };
 
 const useEmulators = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true";
+const appCheckSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY;
 const FUNCTIONS_REGION = "asia-south1";
 
 export interface FirebaseClients {
@@ -41,7 +43,13 @@ export function getFirebase(): FirebaseClients {
     .map(([key]) => key);
   if (missing.length > 0 && !(useEmulators && config.projectId)) throw new FirebaseConfigError(missing);
 
-  const app = getApps().length ? getApp() : initializeApp(config);
+  const isNew = getApps().length === 0;
+  const app = isNew ? initializeApp(config) : getApp();
+  // App Check proves requests come from our panels. Enforcement is switched on
+  // per service in the Firebase console once every client sends tokens.
+  if (isNew && appCheckSiteKey && !useEmulators) {
+    initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey), isTokenAutoRefreshEnabled: true });
+  }
   const auth = getAuth(app);
   const db = getFirestore(app);
   const functions = getFunctions(app, FUNCTIONS_REGION);
