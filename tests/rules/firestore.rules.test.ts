@@ -1,5 +1,5 @@
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, setLogLevel, Timestamp, updateDoc, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, setLogLevel, Timestamp, updateDoc, where } from "firebase/firestore";
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
@@ -132,6 +132,31 @@ describe("news", () => {
     await assertFails(deleteDoc(doc(as("rep2", "REPORTER"), "news/d")));
     await assertFails(deleteDoc(doc(as("rep1", "REPORTER"), "news/s")));
     await assertSucceeds(deleteDoc(doc(as("rep1", "REPORTER"), "news/d")));
+  });
+});
+
+describe("public website queries (anonymous)", () => {
+  it("can list published news but nothing else", async () => {
+    await seed("news/p", { ...draft("p", "rep1"), status: "PUBLISHED" });
+    await seed("news/d", draft("d", "rep1"));
+    const db = anon();
+    const published = await assertSucceeds(getDocs(query(collection(db, "news"), where("status", "==", "PUBLISHED"))));
+    if (published.size !== 1) throw new Error(`expected 1 published article, got ${published.size}`);
+    await assertSucceeds(getDocs(query(collection(db, "news"), where("status", "==", "PUBLISHED"), where("slug", "==", "x"))));
+    await assertFails(getDocs(collection(db, "news")));
+    await assertFails(getDocs(query(collection(db, "news"), where("status", "==", "DRAFT"))));
+  });
+
+  it("can list active categories and locations only when the query says so", async () => {
+    await seed("categories/a", { categoryId: "a", slug: "a", name: "A", isActive: true, displayOrder: 1 });
+    await seed("locations/pune", { locationId: "pune", type: "DISTRICT", isActive: true, name: "पुणे", parentLocationId: "mh" });
+    const db = anon();
+    await assertSucceeds(getDocs(query(collection(db, "categories"), where("isActive", "==", true), orderBy("displayOrder"))));
+    await assertSucceeds(
+      getDocs(query(collection(db, "locations"), where("type", "==", "DISTRICT"), where("isActive", "==", true), orderBy("name"))),
+    );
+    await assertFails(getDocs(collection(db, "categories")));
+    await assertFails(getDocs(query(collection(db, "locations"), where("type", "==", "DISTRICT"))));
   });
 });
 

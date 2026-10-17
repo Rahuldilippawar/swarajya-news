@@ -91,4 +91,4 @@ is created from the Admin Panel. See [docs/SETUP.md](docs/SETUP.md#2-create-the-
 
 ## Status
 
-Milestones 1–5 (setup, roles, news management, reporter workflow, editorial approval) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.
+Milestones 1–6 (setup, roles, news management, reporter workflow, editorial approval, public website) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.

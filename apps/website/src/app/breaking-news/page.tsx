@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { EmptyState } from "@/components/EmptyState";
+import { cursorFrom, Listing, PAGE_SIZE } from "@/components/Listing";
+import { getBreaking } from "@/lib/news";
+import { getNames } from "@/lib/names";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "ब्रेकिंग न्यूज",
@@ -7,11 +11,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/breaking-news" },
 };
 
-export default function Page() {
+export default async function BreakingNewsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const before = cursorFrom((await searchParams).before);
+  const [articles, names] = await Promise.all([getBreaking(PAGE_SIZE, before), getNames()]);
   return (
-    <section className="section">
-      <h1>ब्रेकिंग न्यूज</h1>
-      <EmptyState>अद्याप बातम्या प्रकाशित झालेल्या नाहीत.</EmptyState>
-    </section>
+    <Listing title="ब्रेकिंग न्यूज" articles={articles} basePath="/breaking-news" metaFor={names.metaFor} empty="सध्या कोणतीही ब्रेकिंग न्यूज नाही." />
   );
 }

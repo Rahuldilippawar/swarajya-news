@@ -7,7 +7,7 @@
 | 3 | Firestore and news management | ✅ Done |
 | 4 | Reporter workflow | ✅ Done |
 | 5 | Editorial approval | ✅ Done |
-| 6 | Public website | ⬜ |
+| 6 | Public website | ✅ Done |
 | 7 | Flutter Android app | ⬜ |
 | 8 | Push notifications | ⬜ |
 | 9 | WhatsApp integration | ⬜ |
@@ -104,8 +104,33 @@ from writing `status`; checked in a browser with Editor, Owner and Super Admin a
   and open it from any article ("Full audit trail").
 - Dashboard cards for pending, in-review and ready-to-publish link straight to the queue.
 
-## Next: Milestone 6 — Public website
+## Milestone 6 — Public website ✅
 
-- Homepage, latest, breaking and video news, category and district pages reading published news from Firestore.
-- Article pages with the YouTube player, WhatsApp share, related news and view counts.
-- SEO: per-article metadata, Open Graph, NewsArticle structured data, sitemap with articles.
+Acceptance: *published articles appear publicly and draft articles remain private* — met. Checked in a production
+build against the emulators: drafts never appear in any list, search, sitemap or by direct URL; the website reads
+Firestore anonymously, so the Security Rules (which allow only published news) apply to it like any visitor.
+
+- **Pages:** homepage (breaking ticker, featured story, latest, video news, Shorts, category sections, district
+  links), latest, breaking, video news, category, district with taluka and village filters, article and search.
+  "Older news" pagination everywhere.
+- **Article page:** headline, summary, reporter, village/taluka/district, publish and update times, event time,
+  click-to-play YouTube player (YouTube's own player, with a direct YouTube link as fallback; Shorts in a vertical
+  frame) or photo, tags, related news, WhatsApp share (headline + summary + link) and copy link.
+- **View counts:** the `recordView` function counts one view per article per browser session, published articles only.
+- **SEO:** per-article title, description, canonical URL, Open Graph/Twitter cards, `NewsArticle` structured data
+  (escaped against script injection), sitemap with categories, districts and up to 1,000 recent articles,
+  robots.txt, optimised thumbnails via Next.js images, Marathi dates in Indian time.
+- **Cost and resilience:** Firestore results are cached and shared by all visitors (lists 60 s, articles and
+  taxonomy 5 min), so traffic spikes do not multiply database reads. Only successful results are cached: a
+  Firestore outage or a build without configuration shows empty sections for that request without being stored.
+- **Search** scans the latest 300 published articles (optionally by category/district) for headline, summary and
+  tags. Fine for now; a search service can replace it when the archive grows.
+
+Not yet: advertisement slots (Milestone 10) and instant cache refresh on publish (currently up to a minute; can
+be added with on-demand revalidation).
+
+## Next: Milestone 7 — Flutter Android app
+
+- Connect Firebase, list published news (home, latest, breaking, video, categories, locations), search.
+- Article screen with YouTube playback, WhatsApp share and saved news.
+- Loading, empty and error states; tablet layout.

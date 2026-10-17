@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { EmptyState } from "@/components/EmptyState";
+import { cursorFrom, Listing, PAGE_SIZE } from "@/components/Listing";
+import { getLatest } from "@/lib/news";
+import { getNames } from "@/lib/names";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "ताज्या बातम्या",
-  description: "Latest news from Swarajya News.",
+  description: "Latest Marathi news from Swarajya News.",
   alternates: { canonical: "/news" },
 };
 
-export default function Page() {
-  return (
-    <section className="section">
-      <h1>ताज्या बातम्या</h1>
-      <EmptyState>अद्याप बातम्या प्रकाशित झालेल्या नाहीत.</EmptyState>
-    </section>
-  );
+export default async function LatestNewsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const before = cursorFrom((await searchParams).before);
+  const [articles, names] = await Promise.all([getLatest(PAGE_SIZE, before), getNames()]);
+  return <Listing title="ताज्या बातम्या" articles={articles} basePath="/news" metaFor={names.metaFor} />;
 }

@@ -41,6 +41,13 @@ DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED → PUBLISHED → ARCHIVED
   cannot be changed until it is unpublished.
 - Every callable function also requires the caller's profile to be ACTIVE, so a suspended user's unexpired token is useless.
 
+## Public website data flow
+
+The website renders on the server with the Firestore **Lite** client, reading anonymously — it has no special
+access. Every public query filters `status == PUBLISHED` (and `isActive == true` for taxonomy), which the rules
+require. Results go through Next.js's data cache (`unstable_cache`), so one Firestore read serves every visitor for
+the cache period; article pages are additionally cached as static pages and refreshed every five minutes.
+
 ## Private data on public documents
 
 A published article is world-readable, so anything confidential must live elsewhere. Reporters' source notes are in
@@ -77,6 +84,7 @@ tests in `tests/rules` check the important cases.
 | `setStaffStatus` | SUPER_ADMIN, OWNER* | Suspends or reactivates an account |
 | `updateStaffProfile` | SUPER_ADMIN, OWNER* | Updates name and assigned locations |
 | `transitionNews` | depends on the step (see workflow) | The only way to change an article's status; validates, checks the YouTube video, records reviews and audit logs |
+| `recordView` (HTTP) | anyone | Adds one view to a published article; silently ignores anything else |
 | `health` | anyone | Liveness check |
 
 \* OWNER may only manage EDITOR, REPORTER and SOCIAL_MEDIA_MANAGER accounts (`canManageRole`).
