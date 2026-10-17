@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canTransition, nextStatuses } from "../src/newsStatus";
+import { canTransition, nextStatuses, reviewActionFor, transitionLabel } from "../src/newsStatus";
 
 describe("editorial workflow", () => {
   it("lets a reporter submit their own draft", () => {
@@ -49,5 +49,28 @@ describe("editorial workflow", () => {
   it("lists next statuses", () => {
     expect(nextStatuses("UNDER_REVIEW").sort()).toEqual(["APPROVED", "CHANGES_REQUESTED", "REJECTED"]);
     expect(nextStatuses("REJECTED")).toEqual([]);
+  });
+});
+
+describe("transition metadata", () => {
+  it("reports why a transition is refused", () => {
+    expect(canTransition("DRAFT", "PUBLISHED", { role: "EDITOR", isAuthor: false })).toMatchObject({ code: "INVALID_TRANSITION" });
+    expect(canTransition("APPROVED", "PUBLISHED", { role: "REPORTER", isAuthor: true })).toMatchObject({ code: "FORBIDDEN" });
+    expect(canTransition("APPROVED", "PUBLISHED", { role: null, isAuthor: false })).toMatchObject({ code: "FORBIDDEN" });
+    expect(canTransition("UNDER_REVIEW", "REJECTED", { role: "EDITOR", isAuthor: false, remarks: "  " })).toMatchObject({
+      code: "REMARKS_REQUIRED",
+    });
+  });
+
+  it("records editor decisions but not author submissions", () => {
+    expect(reviewActionFor("DRAFT", "SUBMITTED")).toBeNull();
+    expect(reviewActionFor("UNDER_REVIEW", "APPROVED")).toBe("APPROVE");
+    expect(reviewActionFor("PUBLISHED", "APPROVED")).toBe("UNPUBLISH");
+    expect(reviewActionFor("APPROVED", "PUBLISHED")).toBe("PUBLISH");
+  });
+
+  it("labels unpublishing distinctly from approving", () => {
+    expect(transitionLabel("UNDER_REVIEW", "APPROVED")).toBe("Approve");
+    expect(transitionLabel("PUBLISHED", "APPROVED")).toBe("Unpublish");
   });
 });

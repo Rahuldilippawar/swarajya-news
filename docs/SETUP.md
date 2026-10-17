@@ -57,14 +57,23 @@ FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:808
   npm run set-role -w functions -- --email admin@example.com --role SUPER_ADMIN
 ```
 
-## 3. Adding staff
+## 3. Starter data
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=/secure/path/service-account.json npm run seed -w functions
+```
+
+Adds Maharashtra, its 36 districts and 9 news categories. Existing documents are never overwritten, so it is safe
+to run again. Talukas and villages are added in Admin → Locations.
+
+## 4. Adding staff
 
 After the first Super Admin exists, all other accounts are created from the
 Admin Panel → **Staff & Reporters**. The panel shows a one-time password setup
 link; send it to the person privately (anyone holding it can set the
 password). Suspending an account takes effect immediately.
 
-## 4. App Check
+## 5. App Check
 
 1. In Google Cloud, create a **reCAPTCHA Enterprise** key for the panel domains.
 2. Firebase console → **App Check** → register each web app with that key, and the Android app with Play Integrity.
@@ -73,13 +82,13 @@ password). Suspending an account takes effect immediately.
    - set `ENFORCE_APP_CHECK=true` in `functions/.env.<project>` and redeploy functions;
    - enforce App Check for Firestore and Storage in the console.
 
-## 5. Android package ID
+## 6. Android package ID
 
 The app is generated with the application ID `com.swarajyanews.swarajya_news`
 (`apps/android/android/app/build.gradle.kts`). **Confirm the final ID before the
 first Play Store upload** — it can never change afterwards.
 
-## 6. Secrets
+## 7. Secrets
 
 | Secret | Where it lives |
 | --- | --- |
@@ -87,7 +96,7 @@ first Play Store upload** — it can never change afterwards.
 | Service-account keys | Never in the repo. Only used locally for provisioning. |
 | WhatsApp Business API token, YouTube Data API key | `npx firebase functions:secrets:set NAME` (Cloud Secret Manager) |
 
-## 7. Hosting
+## 8. Hosting
 
 The Next.js apps can be deployed to Firebase App Hosting or any Next.js host
 (e.g. Vercel). Use separate sites/domains, for example:

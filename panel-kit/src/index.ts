@@ -4,3 +4,4 @@ export { FirebaseConfigError, getFirebase, type FirebaseClients } from "./fireba
 export { LoginForm } from "./LoginForm";
 export { PanelShell, type NavItem } from "./PanelShell";
 export { RequireRole } from "./RequireRole";
+export { useLiveDoc, useLiveQuery, type LiveResult } from "./useLiveQuery";

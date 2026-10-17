@@ -106,6 +106,20 @@ describe("news", () => {
     await assertFails(updateDoc(doc(db, "news/n"), { approvedBy: "ed", updatedAt: serverTimestamp() }));
   });
 
+  it("does not let a published article's video be swapped without re-verification", async () => {
+    await seed("news/p", { ...draft("p", "rep1"), status: "PUBLISHED", youtubeVideoId: "dQw4w9WgXcQ" });
+    await assertFails(updateDoc(doc(as("ed", "EDITOR"), "news/p"), { youtubeVideoId: "aaaaaaaaaaa", updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(as("ed", "EDITOR"), "news/p"), { headline: "Corrected headline", updatedAt: serverTimestamp() }));
+  });
+
+  it("only accepts https thumbnails (plus the local Storage emulator)", async () => {
+    const db = as("rep1", "REPORTER");
+    await assertFails(setDoc(doc(db, "news/a"), { ...draft("a", "rep1"), thumbnailUrl: "http://evil.example/a.jpg" }));
+    await assertFails(setDoc(doc(db, "news/b"), { ...draft("b", "rep1"), thumbnailUrl: "http://127.0.0.1.evil.example/a.jpg" }));
+    await assertSucceeds(setDoc(doc(db, "news/c"), { ...draft("c", "rep1"), thumbnailUrl: "https://firebasestorage.googleapis.com/a.jpg" }));
+    await assertSucceeds(setDoc(doc(db, "news/d"), { ...draft("d", "rep1"), thumbnailUrl: "http://127.0.0.1:9199/v0/b/x/o/a.jpg" }));
+  });
+
   it("rejects malformed YouTube IDs", async () => {
     await assertFails(
       setDoc(doc(as("rep1", "REPORTER"), "news/n1"), { ...draft("n1", "rep1"), youtubeVideoId: "../../evil" }),
@@ -134,7 +148,7 @@ describe("suspended staff", () => {
 
   it("blocks a suspended super admin from editing categories", async () => {
     await seed("users/sa", { uid: "sa", role: "SUPER_ADMIN", status: "SUSPENDED" });
-    await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "categories/c"), { name: "Politics", isActive: true }));
+    await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "categories/c"), category("c")));
   });
 
   it("blocks staff whose profile document is missing", async () => {
@@ -175,9 +189,82 @@ describe("restricted collections", () => {
     await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "auditLogs/m"), { action: "forged" }));
   });
 
-  it("only lets super admins edit categories", async () => {
-    await assertFails(setDoc(doc(as("ed", "EDITOR"), "categories/c"), { name: "Politics", isActive: true }));
-    await assertSucceeds(setDoc(doc(as("sa", "SUPER_ADMIN"), "categories/c"), { name: "Politics", isActive: true }));
-    await assertSucceeds(getDoc(doc(anon(), "categories/c")));
+});
+
+const category = (id: string, extra: Record<string, unknown> = {}) => ({
+  categoryId: id,
+  slug: id,
+  name: "राजकारण",
+  isActive: true,
+  displayOrder: 1,
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+  ...extra,
+});
+
+describe("categories", () => {
+  it("only lets super admins create them, and anyone read active ones", async () => {
+    await assertFails(setDoc(doc(as("ed", "EDITOR"), "categories/politics"), category("politics")));
+    await assertSucceeds(setDoc(doc(as("sa", "SUPER_ADMIN"), "categories/politics"), category("politics")));
+    await assertSucceeds(getDoc(doc(anon(), "categories/politics")));
+  });
+
+  it("requires the slug to equal the document ID and never changes it", async () => {
+    const db = as("sa", "SUPER_ADMIN");
+    await assertFails(setDoc(doc(db, "categories/politics"), category("politics", { slug: "other" })));
+    await assertFails(setDoc(doc(db, "categories/a b"), category("a b")));
+    await seed("categories/crime", { categoryId: "crime", slug: "crime", name: "गुन्हे", isActive: true, displayOrder: 2 });
+    await assertSucceeds(updateDoc(doc(db, "categories/crime"), { name: "गुन्हेगारी", updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(db, "categories/crime"), { slug: "crimes", updatedAt: serverTimestamp() }));
+  });
+
+  it("rejects unknown fields and wrong types", async () => {
+    const db = as("sa", "SUPER_ADMIN");
+    await assertFails(setDoc(doc(db, "categories/x"), category("x", { hacked: true })));
+    await assertFails(setDoc(doc(db, "categories/x"), category("x", { displayOrder: "1" })));
+  });
+
+  it("hides inactive categories from the public", async () => {
+    await seed("categories/old", { categoryId: "old", slug: "old", name: "Old", isActive: false, displayOrder: 9 });
+    await assertFails(getDoc(doc(anon(), "categories/old")));
+  });
+});
+
+const location = (id: string, type: string, parentLocationId: string | null) => ({
+  locationId: id,
+  name: id,
+  slug: id,
+  type,
+  parentLocationId,
+  isActive: true,
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+});
+
+describe("locations", () => {
+  it("enforces the state → district → taluka → village hierarchy", async () => {
+    const db = as("sa", "SUPER_ADMIN");
+    await assertSucceeds(setDoc(doc(db, "locations/mh"), location("mh", "STATE", null)));
+    await assertSucceeds(setDoc(doc(db, "locations/pune"), location("pune", "DISTRICT", "mh")));
+    await assertSucceeds(setDoc(doc(db, "locations/haveli"), location("haveli", "TALUKA", "pune")));
+    await assertSucceeds(setDoc(doc(db, "locations/wagholi"), location("wagholi", "VILLAGE", "haveli")));
+
+    await assertFails(setDoc(doc(db, "locations/bad1"), location("bad1", "VILLAGE", "pune")));
+    await assertFails(setDoc(doc(db, "locations/bad2"), location("bad2", "DISTRICT", null)));
+    await assertFails(setDoc(doc(db, "locations/bad3"), location("bad3", "STATE", "mh")));
+    await assertFails(setDoc(doc(db, "locations/bad4"), location("bad4", "TALUKA", "missing")));
+  });
+
+  it("does not let a location be moved or retyped", async () => {
+    await seed("locations/mh", { locationId: "mh", type: "STATE", parentLocationId: null, name: "MH", slug: "mh", isActive: true });
+    await seed("locations/pune", { locationId: "pune", type: "DISTRICT", parentLocationId: "mh", name: "Pune", slug: "pune", isActive: true });
+    const db = as("sa", "SUPER_ADMIN");
+    await assertSucceeds(updateDoc(doc(db, "locations/pune"), { isActive: false, updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(db, "locations/pune"), { type: "TALUKA", updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(db, "locations/pune"), { parentLocationId: "x", updatedAt: serverTimestamp() }));
+  });
+
+  it("only lets super admins write locations", async () => {
+    await assertFails(setDoc(doc(as("ed", "EDITOR"), "locations/mh"), location("mh", "STATE", null)));
   });
 });

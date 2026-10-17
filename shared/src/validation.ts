@@ -21,6 +21,15 @@ export interface NewsFormInput {
   tags?: string[];
 }
 
+/**
+ * Images must be served over https. Plain http is accepted only from the
+ * local machine, where the Firebase Storage emulator serves uploads; such URLs
+ * cannot exist in production. Mirrored in firestore.rules.
+ */
+export function isAllowedImageUrl(url: string): boolean {
+  return /^https:\/\//i.test(url) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//i.test(url);
+}
+
 export type NewsFieldErrors = Partial<Record<keyof NewsFormInput, string>>;
 
 function lengthError(label: string, value: string, { min, max }: { min: number; max: number }) {
@@ -47,7 +56,7 @@ export function validateNews(input: NewsFormInput, mode: "draft" | "submit"): Ne
     if (!yt.ok) errors.youtubeUrl = yt.reason;
   }
 
-  if (input.thumbnailUrl?.trim() && !/^https:\/\//i.test(input.thumbnailUrl.trim())) {
+  if (input.thumbnailUrl?.trim() && !isAllowedImageUrl(input.thumbnailUrl.trim())) {
     errors.thumbnailUrl = "Thumbnail must be an https URL.";
   }
 

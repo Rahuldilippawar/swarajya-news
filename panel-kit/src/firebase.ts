@@ -3,6 +3,7 @@ import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-ch
 import { connectAuthEmulator, getAuth, type Auth } from "firebase/auth";
 import { connectFirestoreEmulator, getFirestore, type Firestore } from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions, type Functions } from "firebase/functions";
+import { connectStorageEmulator, getStorage, type FirebaseStorage } from "firebase/storage";
 
 // Each variable is referenced literally so Next.js can inline it at build time.
 const config = {
@@ -23,6 +24,7 @@ export interface FirebaseClients {
   auth: Auth;
   db: Firestore;
   functions: Functions;
+  storage: FirebaseStorage;
 }
 
 export class FirebaseConfigError extends Error {
@@ -53,13 +55,15 @@ export function getFirebase(): FirebaseClients {
   const auth = getAuth(app);
   const db = getFirestore(app);
   const functions = getFunctions(app, FUNCTIONS_REGION);
+  const storage = getStorage(app);
 
   if (useEmulators) {
     connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
     connectFirestoreEmulator(db, "127.0.0.1", 8080);
     connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+    connectStorageEmulator(storage, "127.0.0.1", 9199);
   }
 
-  clients = { app, auth, db, functions };
+  clients = { app, auth, db, functions, storage };
   return clients;
 }

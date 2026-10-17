@@ -4,9 +4,9 @@
 | - | --- | --- |
 | 1 | Project setup | ✅ Done |
 | 2 | Authentication and roles | ✅ Done |
-| 3 | Firestore and news management | 🟡 Foundations in place |
-| 4 | Reporter workflow | ⬜ |
-| 5 | Editorial approval | ⬜ |
+| 3 | Firestore and news management | ✅ Done |
+| 4 | Reporter workflow | 🟡 Backend ready |
+| 5 | Editorial approval | 🟡 Backend and editor actions ready |
 | 6 | Public website | ⬜ |
 | 7 | Flutter Android app | ⬜ |
 | 8 | Push notifications | ⬜ |
@@ -47,13 +47,37 @@ Acceptance: *unauthorised users cannot access protected functionality* — met, 
 Tests: role rules (shared unit tests), 13 function tests against the Auth + Firestore emulators,
 19 Security Rules tests, and a manual browser run of the full create → set password → sign in → suspend → reactivate flow.
 
+## Milestone 3 — Firestore and news management ✅
+
+Acceptance: *admin can create and manage draft news* — met, and checked end to end in a browser against the emulators.
+
+- **Categories** (Admin → Categories): add, rename, reorder, activate/deactivate. The slug is the document ID, so
+  category URLs never change and can never collide.
+- **Locations** (Admin → Locations): state → district → taluka → village, added without code changes.
+  Security Rules enforce the hierarchy and stop locations being moved or retyped.
+- **Seed data**: `npm run seed -w functions` adds Maharashtra, its 36 districts and 9 starter categories
+  (safe to re-run; never overwrites edits). *Please have the editorial team check the Marathi spellings.*
+- **News editor** (Admin → News → Create): headline, summary, article, category, district/taluka/village,
+  reporter (or office desk), photo upload to Storage, YouTube link with instant format check and embedded preview,
+  tags, SEO title/description, breaking and featured flags, preview, editorial history.
+- **News list** with status filter, search and "load more" pagination.
+- **Workflow**: `transitionNews` Cloud Function is the only way to change status. It enforces
+  `shared/src/newsStatus.ts`, validates required fields on submit, records editorial reviews and audit logs, keeps
+  slugs unique on publish, and defaults the thumbnail to the YouTube one.
+- **YouTube checks** on submit and publish via YouTube's oEmbed endpoint: unavailable (private, deleted,
+  non-embeddable) videos block publishing; if YouTube can't be reached the video is marked *unverified* and the editor
+  is told. A published article's video is locked until it is unpublished.
+- **Dashboard** shows live counts by status, video news and active reporters.
+- **Reporter location assignment** on the Staff page; reporters see their district names on their profile.
+- Callable functions now also refuse callers whose profile is not ACTIVE.
+
 ## Already in place for later milestones
 
-- **M3:** Firestore types, collection names, Security Rules for every collection, composite indexes, YouTube URL validation, slug generation, news form validation, status transition rules (all unit-tested).
+- **M4 / M5:** the workflow function already supports reporter submission and resubmission, editor review,
+  request-changes with remarks, reject, approve, publish, unpublish and archive. Editors can already run every step
+  from the news editor. What remains is the Reporter Panel screens and the Pending Approval queue.
 
-## Next: Milestone 3 — Firestore and news management
+## Next: Milestone 4 — Reporter workflow
 
-- Category and location management (state → district → taluka → village), including a location picker for reporter assignment.
-- News create/edit form in the Admin Panel with YouTube preview, drafts and slug generation.
-- Callable function for status transitions (submit, review, approve, publish, archive) using `shared/src/newsStatus.ts`.
-- Dashboard counts.
+- Reporter Panel: "My News" list, create/edit drafts (reusing the editor), submit, see editor remarks, correct and resubmit.
+- Reporter dashboard counts for their own submissions.

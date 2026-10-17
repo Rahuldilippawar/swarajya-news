@@ -1,3 +1,4 @@
+import type { NewsStatus } from "./newsStatus";
 import type { Role, UserStatus } from "./roles";
 
 /**
@@ -22,7 +23,13 @@ export interface CallableApi {
     request: { uid: string; fullName?: string; assignedLocations?: string[] };
     response: { uid: string };
   };
+  transitionNews: {
+    request: { newsId: string; to: NewsStatus; remarks?: string };
+    response: { newsId: string; status: NewsStatus; slug: string; videoStatus: VideoStatus | null };
+  };
 }
+
+export type VideoStatus = "UNVERIFIED" | "AVAILABLE" | "UNAVAILABLE";
 
 export type CallableName = keyof CallableApi;
 export type CallableRequest<N extends CallableName> = CallableApi[N]["request"];

@@ -113,3 +113,29 @@ button.panel-danger { background: var(--danger); }
 
 .panel-callout { border-left: 4px solid var(--brand-blue); background: #eef0ff; padding: 12px 16px; border-radius: 8px; }
 .panel-callout code { word-break: break-all; }
+
+.panel-form-stack { display: flex; flex-direction: column; gap: 14px; }
+.panel-form-stack label, .panel-field { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 0.9rem; }
+.panel-hint { font-weight: 400; font-size: 0.82rem; color: var(--muted); }
+.panel-field-error { font-weight: 500; font-size: 0.82rem; color: var(--danger); }
+.panel-check { flex-direction: row !important; align-items: center; gap: 8px !important; }
+.panel-check input { width: auto; }
+textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+
+.panel-editor { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+@media (max-width: 1000px) { .panel-editor { grid-template-columns: 1fr; } }
+
+.panel-video { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
+.panel-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.panel-thumb { width: 100%; border-radius: 8px; display: block; }
+
+.panel-breadcrumb { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.panel-breadcrumb button { background: none; color: var(--brand-blue); padding: 0; font-weight: 600; }
+
+.panel-badge[data-tone="info"] { background: #e6e8ff; color: var(--brand-blue); }
+.panel-badge[data-tone="warn"] { background: #fff1d6; color: #8a5300; }
+.panel-badge[data-tone="muted"] { background: #ececf2; color: var(--muted); }
+
+.panel-preview { font-family: "Noto Sans Devanagari", "Mukta", system-ui, sans-serif; line-height: 1.7; }
+.panel-preview h1 { font-size: 1.6rem; margin-bottom: 4px; }
+.panel-preview .lead { font-weight: 600; color: var(--muted); }

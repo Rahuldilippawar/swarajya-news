@@ -35,7 +35,18 @@ DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED → PUBLISHED → ARCHIVED
 - Reporters may submit and resubmit **their own** articles only.
 - Review, approval and publication require the `news.review` / `news.publish` permission (EDITOR, SUPER_ADMIN), so a reporter can never publish their own work.
 - Rejecting and requesting changes require remarks.
-- Clients can edit article content (subject to rules) but can never write `status`, `approvedBy`, `publishedAt` or `viewCount`.
+- Clients can edit article content (subject to rules) but can never write `status`, `approvedBy`, `publishedAt`, `videoStatus` or `viewCount`.
+- On submit and publish the function checks the YouTube video through oEmbed. Unavailable videos block publishing;
+  if YouTube can't be reached the article is marked `UNVERIFIED` rather than guessed. A published article's video
+  cannot be changed until it is unpublished.
+- Every callable function also requires the caller's profile to be ACTIVE, so a suspended user's unexpired token is useless.
+
+## Taxonomy
+
+- Categories use their slug as document ID (`categories/politics`), so URLs are stable and unique.
+- Locations: `STATE → DISTRICT → TALUKA → VILLAGE`, linked by `parentLocationId`. The rules check each new
+  location's parent has the right type and forbid moving or retyping. Deactivate instead of deleting, so old articles
+  keep their location.
 
 ## Permissions
 
@@ -60,6 +71,7 @@ tests in `tests/rules` check the important cases.
 | `setStaffRole` | SUPER_ADMIN, OWNER* | Changes a role and signs the user out everywhere |
 | `setStaffStatus` | SUPER_ADMIN, OWNER* | Suspends or reactivates an account |
 | `updateStaffProfile` | SUPER_ADMIN, OWNER* | Updates name and assigned locations |
+| `transitionNews` | depends on the step (see workflow) | The only way to change an article's status; validates, checks the YouTube video, records reviews and audit logs |
 | `health` | anyone | Liveness check |
 
 \* OWNER may only manage EDITOR, REPORTER and SOCIAL_MEDIA_MANAGER accounts (`canManageRole`).

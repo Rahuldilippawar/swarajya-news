@@ -23,8 +23,9 @@ export function requireString(data: Payload, key: string, { min = 1, max = 200 }
   return trimmed;
 }
 
+/** Absent, undefined and null (what callable clients send for `undefined`) all mean "not provided". */
 export function optionalString(data: Payload, key: string, opts?: { min?: number; max?: number }): string | undefined {
-  return data[key] === undefined ? undefined : requireString(data, key, opts);
+  return data[key] == null ? undefined : requireString(data, key, opts);
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -51,7 +52,7 @@ export function requireStatus(data: Payload, key = "status"): UserStatus {
 
 export function optionalIdList(data: Payload, key: string, maxItems = 20): string[] | undefined {
   const value = data[key];
-  if (value === undefined) return undefined;
+  if (value == null) return undefined;
   if (!Array.isArray(value) || value.length > maxItems || value.some((v) => typeof v !== "string" || !/^[\w-]{1,128}$/.test(v))) {
     throw new HttpsError("invalid-argument", `${key} must be a list of at most ${maxItems} IDs.`);
   }

@@ -7,7 +7,11 @@ import { readFileSync } from "node:fs";
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
 
 await build({
-  entryPoints: { index: "src/index.ts", "scripts/setRole": "src/scripts/setRole.ts" },
+  entryPoints: {
+    index: "src/index.ts",
+    "scripts/setRole": "src/scripts/setRole.ts",
+    "scripts/seed": "src/scripts/seed.ts",
+  },
   outdir: "lib",
   bundle: true,
   platform: "node",

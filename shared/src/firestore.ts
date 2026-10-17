@@ -1,3 +1,4 @@
+import type { VideoStatus } from "./api";
 import type { NewsStatus } from "./newsStatus";
 import type { Role, UserStatus } from "./roles";
 
@@ -61,7 +62,7 @@ export interface NewsDoc {
   youtubeVideoId?: string;
   videoProvider?: "YOUTUBE";
   videoTitle?: string;
-  videoStatus?: "UNVERIFIED" | "AVAILABLE" | "UNAVAILABLE";
+  videoStatus?: VideoStatus;
   status: NewsStatus;
   isBreaking: boolean;
   isFeatured: boolean;
@@ -78,8 +79,11 @@ export interface NewsDoc {
 }
 
 export interface CategoryDoc {
+  /** Same as the document ID and the slug, so category URLs never change. */
   categoryId: string;
+  /** Display name, usually Marathi (e.g. "राजकारण"). */
   name: string;
+  nameEn?: string;
   slug: string;
   description?: string;
   isActive: boolean;
@@ -91,12 +95,30 @@ export type LocationType = (typeof LOCATION_TYPES)[number];
 
 export interface LocationDoc {
   locationId: string;
+  /** Display name, usually Marathi (e.g. "पुणे"). */
   name: string;
+  /** Optional English name, used to build readable URL slugs (e.g. "pune"). */
+  nameEn?: string;
   slug: string;
   type: LocationType;
   parentLocationId: string | null;
   isActive: boolean;
 }
+
+/** The type of location that sits under each level of the hierarchy. */
+export const CHILD_LOCATION_TYPE: Record<LocationType, LocationType | null> = {
+  STATE: "DISTRICT",
+  DISTRICT: "TALUKA",
+  TALUKA: "VILLAGE",
+  VILLAGE: null,
+};
+
+export const LOCATION_TYPE_LABELS: Record<LocationType, string> = {
+  STATE: "State",
+  DISTRICT: "District",
+  TALUKA: "Taluka",
+  VILLAGE: "Village / City",
+};
 
 export const REVIEW_ACTIONS = ["START_REVIEW", "APPROVE", "REQUEST_CHANGES", "REJECT", "PUBLISH", "UNPUBLISH", "ARCHIVE"] as const;
 export type ReviewAction = (typeof REVIEW_ACTIONS)[number];

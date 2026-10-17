@@ -2,6 +2,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import { onRequest } from "firebase-functions/v2/https";
 import { REGION } from "./admin";
 import { callable } from "./callable";
+import * as news from "./news";
 import * as users from "./users";
 
 setGlobalOptions({ region: REGION, maxInstances: 10 });
@@ -15,3 +16,5 @@ export const createStaffUser = callable("createStaffUser", users.createStaffUser
 export const setStaffRole = callable("setStaffRole", users.setStaffRole);
 export const setStaffStatus = callable("setStaffStatus", users.setStaffStatus);
 export const updateStaffProfile = callable("updateStaffProfile", users.updateStaffProfile);
+
+export const transitionNews = callable("transitionNews", (caller, data) => news.transitionNews(caller, data));

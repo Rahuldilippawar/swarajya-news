@@ -1,9 +1,9 @@
 "use client";
 
-import { errorMessage, getFirebase, useAuth } from "@swarajya/panel-kit";
-import { COLLECTIONS, ROLE_LABELS, type UserDoc } from "@swarajya/shared";
+import { errorMessage, getFirebase, useAuth, useLiveQuery } from "@swarajya/panel-kit";
+import { COLLECTIONS, ROLE_LABELS, type LocationDoc, type UserDoc } from "@swarajya/shared";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, documentId, onSnapshot, query, where } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 type Profile = Pick<UserDoc, "fullName" | "email" | "role" | "status" | "assignedLocations"> & { reporterId?: string | null };
@@ -25,6 +25,12 @@ export default function ProfilePage() {
       (err) => setError(errorMessage(err)),
     );
   }, [user]);
+
+  const locationIds = (profile?.assignedLocations ?? []).slice(0, 30);
+  const locations = useLiveQuery<LocationDoc>(
+    () => (locationIds.length ? query(collection(getFirebase().db, COLLECTIONS.locations), where(documentId(), "in", locationIds)) : null),
+    [locationIds.join(",")],
+  );
 
   async function changePassword() {
     if (!user?.email) return;
@@ -56,7 +62,11 @@ export default function ProfilePage() {
           </tr>
           <tr>
             <th scope="row">Assigned locations</th>
-            <td>{profile.assignedLocations?.length ? profile.assignedLocations.join(", ") : "Not assigned yet"}</td>
+            <td>
+              {locationIds.length
+                ? locationIds.map((id) => locations.data?.find((l) => l.locationId === id)?.name ?? "…").join(", ")
+                : "Not assigned yet"}
+            </td>
           </tr>
         </tbody>
       </table>

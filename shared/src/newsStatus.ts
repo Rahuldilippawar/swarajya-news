@@ -1,3 +1,4 @@
+import type { ReviewAction } from "./firestore";
 import { hasPermission, type Permission, type Role } from "./roles";
 
 export const NEWS_STATUSES = [
@@ -50,13 +51,15 @@ export const AUTHOR_EDITABLE_STATUSES: readonly NewsStatus[] = ["DRAFT", "CHANGE
 export const PUBLIC_STATUS: NewsStatus = "PUBLISHED";
 
 export interface TransitionContext {
-  role: Role;
+  role: Role | null;
   /** True when the acting user is the article's reporter. */
   isAuthor: boolean;
   remarks?: string;
 }
 
-export type TransitionCheck = { ok: true } | { ok: false; reason: string };
+export type TransitionCheck =
+  | { ok: true }
+  | { ok: false; code: "INVALID_TRANSITION" | "FORBIDDEN" | "REMARKS_REQUIRED"; reason: string };
 
 export function findTransition(from: NewsStatus, to: NewsStatus): TransitionRule | undefined {
   return NEWS_TRANSITIONS.find((t) => t.from === from && t.to === to);
@@ -73,14 +76,62 @@ export function nextStatuses(from: NewsStatus): NewsStatus[] {
  */
 export function canTransition(from: NewsStatus, to: NewsStatus, ctx: TransitionContext): TransitionCheck {
   const rule = findTransition(from, to);
-  if (!rule) return { ok: false, reason: `Transition ${from} → ${to} is not allowed.` };
+  if (!rule) return { ok: false, code: "INVALID_TRANSITION", reason: `News cannot move from ${from} to ${to}.` };
 
   const asAuthor = rule.author && ctx.isAuthor && hasPermission(ctx.role, "news.create");
   if (!asAuthor && !hasPermission(ctx.role, rule.permission)) {
-    return { ok: false, reason: `Role ${ctx.role} may not move news from ${from} to ${to}.` };
+    return { ok: false, code: "FORBIDDEN", reason: `You may not move this news from ${from} to ${to}.` };
   }
   if (rule.requiresRemarks && !ctx.remarks?.trim()) {
-    return { ok: false, reason: "Remarks are required for this decision." };
+    return { ok: false, code: "REMARKS_REQUIRED", reason: "Remarks are required for this decision." };
   }
   return { ok: true };
+}
+
+export const NEWS_STATUS_LABELS: Record<NewsStatus, string> = {
+  DRAFT: "Draft",
+  SUBMITTED: "Submitted",
+  UNDER_REVIEW: "Under review",
+  CHANGES_REQUESTED: "Changes requested",
+  REJECTED: "Rejected",
+  APPROVED: "Approved",
+  PUBLISHED: "Published",
+  ARCHIVED: "Archived",
+};
+
+/** Button label for a workflow step. */
+export function transitionLabel(from: NewsStatus, to: NewsStatus): string {
+  return from === "PUBLISHED" && to === "APPROVED" ? "Unpublish" : TRANSITION_LABELS[to];
+}
+
+/** Button label for moving news into a status (see `transitionLabel` for the exceptions). */
+export const TRANSITION_LABELS: Record<NewsStatus, string> = {
+  DRAFT: "Back to draft",
+  SUBMITTED: "Submit for approval",
+  UNDER_REVIEW: "Start review",
+  CHANGES_REQUESTED: "Request changes",
+  REJECTED: "Reject",
+  APPROVED: "Approve",
+  PUBLISHED: "Publish",
+  ARCHIVED: "Archive",
+};
+
+/** The editorialReviews action recorded for an editor's transition, or null for author actions. */
+export function reviewActionFor(from: NewsStatus, to: NewsStatus): ReviewAction | null {
+  switch (to) {
+    case "UNDER_REVIEW":
+      return "START_REVIEW";
+    case "APPROVED":
+      return from === "PUBLISHED" ? "UNPUBLISH" : "APPROVE";
+    case "CHANGES_REQUESTED":
+      return "REQUEST_CHANGES";
+    case "REJECTED":
+      return "REJECT";
+    case "PUBLISHED":
+      return "PUBLISH";
+    case "ARCHIVED":
+      return "ARCHIVE";
+    default:
+      return null;
+  }
 }

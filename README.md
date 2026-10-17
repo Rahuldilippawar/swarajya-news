@@ -91,4 +91,4 @@ is created from the Admin Panel. See [docs/SETUP.md](docs/SETUP.md#2-create-the-
 
 ## Status
 
-Milestones 1 (project setup) and 2 (authentication and roles) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.
+Milestones 1–3 (project setup, authentication and roles, news management) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.

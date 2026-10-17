@@ -52,7 +52,8 @@ service cloud.firestore {
         && (!('youtubeVideoId' in d) || d.youtubeVideoId == null
             || (d.youtubeVideoId is string && d.youtubeVideoId.matches('^[A-Za-z0-9_-]{11}$')))
         && (!('thumbnailUrl' in d) || d.thumbnailUrl == null
-            || (d.thumbnailUrl is string && d.thumbnailUrl.matches('^https://.*')));
+            || (d.thumbnailUrl is string
+                && d.thumbnailUrl.matches('^(https://|http://(127[.]0[.]0[.]1|localhost)(:[0-9]+)?/).*')));
     }
 
     // ---------------------------------------------------------------- users
@@ -86,6 +87,8 @@ service cloud.firestore {
       allow update: if isActiveStaff()
         && validNewsContent(request.resource.data)
         && request.resource.data.updatedAt == request.time
+        // A published video is verified by Cloud Functions; unpublish to change it.
+        && !(resource.data.status == 'PUBLISHED' && changedKeys().hasAny(['youtubeUrl', 'youtubeVideoId']))
         && (
           (canEditAnyNews() && changedKeys().hasOnly(editorFields()))
           || (isAuthor()
@@ -97,14 +100,62 @@ service cloud.firestore {
     }
 
     // ------------------------------------------------------ taxonomy & settings
+    // Categories use their slug as document ID, so a category URL never changes
+    // and two categories can never share a slug. Deactivate instead of deleting.
+    function validCategory(d) {
+      return d.keys().hasOnly(['categoryId', 'name', 'nameEn', 'slug', 'description', 'isActive', 'displayOrder', 'createdAt', 'updatedAt'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && (!('nameEn' in d) || (d.nameEn is string && d.nameEn.size() <= 60))
+        && (!('description' in d) || (d.description is string && d.description.size() <= 300))
+        && d.isActive is bool
+        && d.displayOrder is int
+        && d.updatedAt == request.time;
+    }
+
     match /categories/{id} {
       allow read: if resource.data.isActive == true || signedIn();
-      allow write: if isSuperAdmin() && isActiveStaff();
+      allow create: if isSuperAdmin() && isActiveStaff()
+        && validCategory(request.resource.data)
+        && request.resource.data.categoryId == id
+        && request.resource.data.slug == id
+        && id.matches('^[^/\\s]{1,60}$')
+        && request.resource.data.createdAt == request.time;
+      allow update: if isSuperAdmin() && isActiveStaff()
+        && validCategory(request.resource.data)
+        && !changedKeys().hasAny(['categoryId', 'slug', 'createdAt']);
+      allow delete: if false;
+    }
+
+    // Locations form a fixed hierarchy: STATE → DISTRICT → TALUKA → VILLAGE.
+    function parentTypeOf(type) {
+      return {'DISTRICT': 'STATE', 'TALUKA': 'DISTRICT', 'VILLAGE': 'TALUKA'}[type];
+    }
+
+    function validLocation(d) {
+      return d.keys().hasOnly(['locationId', 'name', 'nameEn', 'slug', 'type', 'parentLocationId', 'isActive', 'createdAt', 'updatedAt'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 80
+        && (!('nameEn' in d) || (d.nameEn is string && d.nameEn.size() <= 80))
+        && d.slug is string && d.slug.matches('^[^/\\s]{1,60}$')
+        && d.type in ['STATE', 'DISTRICT', 'TALUKA', 'VILLAGE']
+        && d.isActive is bool
+        && d.updatedAt == request.time;
     }
 
     match /locations/{id} {
       allow read: if resource.data.isActive == true || signedIn();
-      allow write: if isSuperAdmin() && isActiveStaff();
+      allow create: if isSuperAdmin() && isActiveStaff()
+        && validLocation(request.resource.data)
+        && request.resource.data.locationId == id
+        && request.resource.data.createdAt == request.time
+        && (request.resource.data.type == 'STATE'
+              ? request.resource.data.parentLocationId == null
+              : request.resource.data.parentLocationId is string
+                && get(/databases/$(database)/documents/locations/$(request.resource.data.parentLocationId)).data.type
+                   == parentTypeOf(request.resource.data.type));
+      allow update: if isSuperAdmin() && isActiveStaff()
+        && validLocation(request.resource.data)
+        && !changedKeys().hasAny(['locationId', 'type', 'parentLocationId', 'createdAt']);
+      allow delete: if false;
     }
 
     match /appSettings/{id} {

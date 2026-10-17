@@ -3,6 +3,8 @@
 import { callFunction, errorMessage } from "@swarajya/panel-kit";
 import { canManageRole, ROLE_LABELS, ROLES, type Role } from "@swarajya/shared";
 import { useMemo, useState } from "react";
+import { useLocationsOfType } from "@/lib/taxonomy";
+import { AssignLocations } from "./AssignLocations";
 import type { StaffRow } from "./useStaff";
 
 export function StaffTable({ rows, actorUid, actorRole }: { rows: StaffRow[]; actorUid: string; actorRole: Role }) {
@@ -10,6 +12,7 @@ export function StaffTable({ rows, actorUid, actorRole }: { rows: StaffRow[]; ac
   const [roleFilter, setRoleFilter] = useState<Role | "">("");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const districts = useLocationsOfType("DISTRICT");
 
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -55,6 +58,7 @@ export function StaffTable({ rows, actorUid, actorRole }: { rows: StaffRow[]; ac
               <th>Email</th>
               <th>Reporter ID</th>
               <th>Role</th>
+              <th>Districts</th>
               <th>Status</th>
               <th />
             </tr>
@@ -90,6 +94,16 @@ export function StaffTable({ rows, actorUid, actorRole }: { rows: StaffRow[]; ac
                     )}
                   </td>
                   <td>
+                    {row.role === "REPORTER" ? (
+                      <AssignLocations
+                        uid={row.uid}
+                        assigned={row.assignedLocations ?? []}
+                        districts={districts.data ?? []}
+                        editable={editable}
+                      />
+                    ) : "—"}
+                  </td>
+                  <td>
                     <span className="panel-badge" data-tone={suspended ? "danger" : "ok"}>{suspended ? "Suspended" : "Active"}</span>
                   </td>
                   <td>
@@ -115,7 +129,7 @@ export function StaffTable({ rows, actorUid, actorRole }: { rows: StaffRow[]; ac
             })}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={6} className="panel-muted">No staff match these filters.</td>
+                <td colSpan={7} className="panel-muted">No staff match these filters.</td>
               </tr>
             )}
           </tbody>

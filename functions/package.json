@@ -12,7 +12,8 @@
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
     "set-role": "npm run build && node lib/scripts/setRole.js",
-    "test": "firebase emulators:exec --only auth,firestore --project demo-swarajya \"vitest run\""
+    "test": "firebase emulators:exec --only auth,firestore --project demo-swarajya \"vitest run\"",
+    "seed": "npm run build && node lib/scripts/seed.js"
   },
   "dependencies": {
     "firebase-admin": "13.10.0",

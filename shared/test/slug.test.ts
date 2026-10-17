@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { slugify, slugWithSuffix } from "../src/slug";
+import { newsSlug, slugify, slugWithSuffix, taxonomySlug } from "../src/slug";
 
 describe("slugify", () => {
   it("handles English headlines", () => {
@@ -21,5 +21,18 @@ describe("slugify", () => {
     const slug = slugWithSuffix("a ".repeat(100), "k3x9");
     expect(slug.endsWith("-k3x9")).toBe(true);
     expect(slug.length).toBeLessThanOrEqual(80);
+  });
+});
+
+describe("generated slugs", () => {
+  it("adds a random suffix to news slugs", () => {
+    const a = newsSlug("पुण्यात पाऊस");
+    expect(a).toMatch(/^पुण्यात-पाऊस-[a-z2-9]{5}$/);
+    expect(newsSlug("पुण्यात पाऊस")).not.toBe(a);
+  });
+
+  it("prefers the English name for taxonomy", () => {
+    expect(taxonomySlug("पुणे", "Pune")).toBe("pune");
+    expect(taxonomySlug("पुणे", "  ")).toBe("पुणे");
   });
 });
