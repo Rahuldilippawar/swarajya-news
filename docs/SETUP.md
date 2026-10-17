@@ -132,7 +132,7 @@ npx firebase functions:secrets:set WHATSAPP_APP_SECRET     # Meta app → Settin
 npx firebase functions:secrets:set WHATSAPP_VERIFY_TOKEN   # any long random string
 ```
 
-In `functions/.env.<projectId>` (not committed):
+In `functions/.env.<projectId>` (not committed; `functions/.env` holds the shared defaults and empty placeholders):
 
 ```
 PUBLIC_SITE_URL=https://your-website-domain

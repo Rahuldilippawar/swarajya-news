@@ -8,6 +8,8 @@ import * as news from "./news";
 import * as notifications from "./notifications";
 import * as users from "./users";
 import { recordView as countView } from "./views";
+import { recordAdEvent as countAdEvent } from "./ads";
+import * as reports from "./reports";
 import * as bulletin from "./whatsapp/bulletin";
 import { MetaCloudProvider } from "./whatsapp/provider";
 import * as subscribers from "./whatsapp/subscribers";
@@ -106,3 +108,27 @@ export const whatsappWebhook = onRequest({ secrets: [WHATSAPP_APP_SECRET, WHATSA
   }
   res.status(200).end();
 });
+
+// ---------------------------------------------------------------- ads & reports
+
+/**
+ * Public ad impression/click counter. Accepts JSON or text/plain bodies
+ * (navigator.sendBeacon sends text/plain, which avoids a CORS preflight).
+ */
+export const recordAdEvent = onRequest({ cors: true, maxInstances: 10 }, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).end();
+    return;
+  }
+  try {
+    let body: unknown = req.body;
+    if (typeof body === "string" || Buffer.isBuffer(body)) body = JSON.parse(String(body) || "{}");
+    const { adId, type } = (body ?? {}) as { adId?: unknown; type?: unknown };
+    await countAdEvent(adId, type);
+  } catch (err) {
+    logger.warn("recordAdEvent ignored a request", err);
+  }
+  res.status(204).end();
+});
+
+export const getReport = callable("getReport", reports.getReport, { timeoutSeconds: 120, memory: "512MiB" });

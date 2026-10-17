@@ -1,14 +1,19 @@
 import Link from "next/link";
+import { getSettings } from "@/lib/settings";
 import { SITE } from "@/lib/site";
 
-export function SiteFooter() {
+const SOCIAL_NAMES = { youtube: "YouTube", facebook: "Facebook", instagram: "Instagram", whatsapp: "WhatsApp", x: "X" } as const;
+
+export async function SiteFooter() {
+  const settings = await getSettings();
+  const social = (Object.keys(SOCIAL_NAMES) as (keyof typeof SOCIAL_NAMES)[]).filter((k) => settings.socialLinks[k]);
   return (
     <footer className="site-footer">
       <div className="container">
         <div className="cols">
           <div>
-            <h3>{SITE.nameMarathi}</h3>
-            <p>{SITE.description}</p>
+            <h3>{settings.channelName}</h3>
+            <p>{settings.tagline ?? SITE.description}</p>
           </div>
           <div>
             <h3>माहिती</h3>
@@ -22,7 +27,9 @@ export function SiteFooter() {
           <div>
             <h3>आम्हाला फॉलो करा</h3>
             <ul>
-              <li><a href={SITE.social.youtube} target="_blank" rel="noopener noreferrer">YouTube</a></li>
+              {social.map((k) => (
+                <li key={k}><a href={settings.socialLinks[k]} target="_blank" rel="noopener noreferrer">{SOCIAL_NAMES[k]}</a></li>
+              ))}
             </ul>
           </div>
         </div>

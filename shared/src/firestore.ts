@@ -216,6 +216,15 @@ export interface WhatsAppSubscriberDoc {
 export const AD_PLACEMENTS = ["HOME_TOP", "HOME_INLINE", "ARTICLE_TOP", "ARTICLE_BOTTOM", "SIDEBAR", "APP_BANNER"] as const;
 export type AdPlacement = (typeof AD_PLACEMENTS)[number];
 
+export const AD_PLACEMENT_LABELS: Record<AdPlacement, string> = {
+  HOME_TOP: "Website homepage — top",
+  HOME_INLINE: "Website homepage — between sections",
+  ARTICLE_TOP: "Website article — above the story",
+  ARTICLE_BOTTOM: "Website article — below the story",
+  SIDEBAR: "Website — side column (wide screens)",
+  APP_BANNER: "Android app — home banner",
+};
+
 export interface AdvertisementDoc {
   advertisementId: string;
   title: string;
@@ -225,6 +234,15 @@ export interface AdvertisementDoc {
   startAt: TimestampLike;
   endAt: TimestampLike;
   isActive: boolean;
+  /** Totals, written only by the recordAdEvent function. Per-day counts are in advertisements/{id}/daily/{yyyy-mm-dd}. */
+  impressions?: number;
+  clicks?: number;
+  createdAt: TimestampLike;
+  updatedAt: TimestampLike;
+}
+
+export function isAdRunning(ad: Pick<AdvertisementDoc, "isActive" | "startAt" | "endAt">, now = new Date()): boolean {
+  return ad.isActive && ad.startAt.toDate() <= now && now < ad.endAt.toDate();
 }
 
 export interface AuditLogDoc {
@@ -237,10 +255,15 @@ export interface AuditLogDoc {
   relevantMetadata?: Record<string, unknown>;
 }
 
+export const SOCIAL_NETWORKS = ["youtube", "facebook", "instagram", "whatsapp", "x"] as const;
+export type SocialNetwork = (typeof SOCIAL_NETWORKS)[number];
+
+/** appSettings/public — editable by the Super Admin in Admin → Settings, read by the website and app. */
 export interface AppSettingsDoc {
   channelName: string;
-  logoUrl: string;
-  contactDetails: { phone?: string; email?: string; address?: string };
-  socialLinks: { youtube?: string; facebook?: string; instagram?: string; whatsapp?: string; x?: string };
-  homepageConfiguration: { featuredCategoryIds: string[]; showShortVideos: boolean };
+  tagline?: string;
+  contactDetails: { phone?: string; whatsapp?: string; email?: string; address?: string };
+  socialLinks: Partial<Record<SocialNetwork, string>>;
+  updatedAt?: TimestampLike;
+  updatedBy?: string;
 }

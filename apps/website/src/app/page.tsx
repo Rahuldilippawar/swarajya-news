@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Ad } from "@/components/Ad";
 import { EmptyState } from "@/components/EmptyState";
 import { NewsCard, NewsGrid } from "@/components/NewsCard";
 import { Section } from "@/components/Section";
@@ -46,6 +47,8 @@ export default async function HomePage() {
         </div>
       )}
 
+      <Ad placement="HOME_TOP" />
+
       <div className="hero">
         <NewsCard article={hero} variant="hero" meta={names.metaFor(hero)} priority />
         <div className="hero-side">
@@ -60,6 +63,8 @@ export default async function HomePage() {
           <NewsGrid articles={moreLatest} metaFor={names.metaFor} />
         </Section>
       )}
+
+      <Ad placement="HOME_INLINE" variant="inline" />
 
       {regularVideos.length > 0 && (
         <Section id="video" title="व्हिडिओ बातम्या" href="/video-news">

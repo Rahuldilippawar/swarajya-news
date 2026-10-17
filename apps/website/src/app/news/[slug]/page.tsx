@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Ad } from "@/components/Ad";
 import { NewsCard } from "@/components/NewsCard";
 import { ShareButtons } from "@/components/ShareButtons";
 import { Thumb } from "@/components/Thumb";
@@ -105,6 +106,8 @@ export default async function ArticlePage({ params }: Props) {
 
       <ShareButtons headline={article.headline} summary={article.summary} url={url} />
 
+      <Ad placement="ARTICLE_TOP" variant="inline" />
+
       {article.youtubeVideoId ? (
         <VideoPlayer videoId={article.youtubeVideoId} title={article.videoTitle ?? article.headline} isShort={article.isShort} />
       ) : (
@@ -130,6 +133,8 @@ export default async function ArticlePage({ params }: Props) {
       )}
 
       <ShareButtons headline={article.headline} summary={article.summary} url={url} />
+
+      <Ad placement="ARTICLE_BOTTOM" variant="inline" />
 
       {related.length > 0 && (
         <section className="section related" aria-labelledby="h-related">

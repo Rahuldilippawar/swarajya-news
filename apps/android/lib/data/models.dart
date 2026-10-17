@@ -177,3 +177,36 @@ class PlaceNews extends NewsFilter {
   const PlaceNews(this.place);
   final Place place;
 }
+
+/// A banner from Admin → Advertisements with placement APP_BANNER.
+class AppAd {
+  const AppAd({required this.id, required this.title, required this.imageUrl, required this.targetUrl, required this.startAt, required this.endAt});
+
+  final String id;
+  final String title;
+  final String imageUrl;
+  final String targetUrl;
+  final DateTime startAt;
+  final DateTime endAt;
+
+  bool isRunning(DateTime now) => !now.isBefore(startAt) && now.isBefore(endAt);
+}
+
+/// Channel details from Admin → Settings.
+class AppSettings {
+  const AppSettings({required this.channelName, this.tagline, this.contact = const {}, this.social = const {}});
+
+  final String channelName;
+  final String? tagline;
+
+  /// phone, whatsapp, email, address
+  final Map<String, String> contact;
+
+  /// youtube, facebook, instagram, whatsapp, x → https URL
+  final Map<String, String> social;
+
+  static const defaults = AppSettings(
+    channelName: 'स्वराज्य न्यूज',
+    social: {'youtube': 'https://www.youtube.com/@swarajyanews2025'},
+  );
+}

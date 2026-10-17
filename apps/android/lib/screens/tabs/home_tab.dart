@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import '../../data/models.dart';
 import '../../data/news_repository.dart';
 import '../../services.dart';
+import '../../widgets/ad_banner.dart';
 import '../../widgets/news_card.dart';
 import '../../widgets/states.dart';
 import '../feed_screen.dart';
 
 class _HomeData {
-  _HomeData(this.breaking, this.featured, this.latest, this.categories, this.districts, this.byCategory);
+  _HomeData(this.breaking, this.featured, this.latest, this.categories, this.districts, this.byCategory, [this.ads = const []]);
 
   final List<Article> breaking;
   final List<Article> featured;
@@ -16,6 +17,7 @@ class _HomeData {
   final List<Category> categories;
   final Map<String, Place> districts;
   final List<(Category, List<Article>)> byCategory;
+  final List<AppAd> ads;
 }
 
 class HomeTab extends StatefulWidget {
@@ -47,6 +49,8 @@ class _HomeTabState extends State<HomeTab> {
     final featured = results[4] as List<Article>;
     final top = categories.take(4).toList();
     final perCategory = await Future.wait(top.map((c) => repo.feed(CategoryNews(c), limit: 3)));
+    // Ads are optional: a failure must never hide the news.
+    final ads = await repo.appBanners().catchError((Object _) => <AppAd>[]);
     return _HomeData(
       results[0] as List<Article>,
       featured,
@@ -54,6 +58,7 @@ class _HomeTabState extends State<HomeTab> {
       categories,
       {for (final d in results[3] as List<Place>) d.id: d},
       [for (var i = 0; i < top.length; i++) (top[i], perCategory[i])],
+      ads,
     );
   }
 
@@ -94,6 +99,7 @@ class _HomeTabState extends State<HomeTab> {
                 padding: const EdgeInsets.all(8),
                 children: [
                   if (data.breaking.isNotEmpty) _BreakingStrip(items: data.breaking),
+                  if (data.ads.isNotEmpty) AdBanner(ads: data.ads, tracker: AppServices.of(context).adTracker),
                   HeroNewsCard(article: hero, meta: meta(hero)),
                   _SectionHeader(
                     title: 'ताज्या बातम्या',

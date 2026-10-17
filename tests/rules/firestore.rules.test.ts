@@ -228,6 +228,70 @@ describe("whatsapp data", () => {
   });
 });
 
+const ad = (extra: Record<string, unknown> = {}) => ({
+  advertisementId: "ad1",
+  title: "दिवाळी ऑफर",
+  imageUrl: "https://firebasestorage.googleapis.com/ads/a.jpg",
+  targetUrl: "https://shop.example/diwali",
+  placement: "HOME_TOP",
+  startAt: Timestamp.fromDate(new Date("2026-10-01")),
+  endAt: Timestamp.fromDate(new Date("2026-11-01")),
+  isActive: true,
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+  ...extra,
+});
+
+describe("advertisements", () => {
+  beforeEach(() => seed("users/owner", { uid: "owner", role: "OWNER", status: "ACTIVE" }));
+
+  it("lets the owner create valid ads and the public read active ones", async () => {
+    await assertSucceeds(setDoc(doc(as("owner", "OWNER"), "advertisements/ad1"), ad()));
+    await assertSucceeds(getDoc(doc(anon(), "advertisements/ad1")));
+    await assertFails(setDoc(doc(as("ed", "EDITOR"), "advertisements/ad2"), ad({ advertisementId: "ad2" })));
+  });
+
+  it("rejects unsafe links, bad dates and forged counters", async () => {
+    const db = as("owner", "OWNER");
+    await assertFails(setDoc(doc(db, "advertisements/ad1"), ad({ targetUrl: "javascript:alert(1)" })));
+    await assertFails(setDoc(doc(db, "advertisements/ad1"), ad({ targetUrl: "http://plain.example" })));
+    await assertFails(setDoc(doc(db, "advertisements/ad1"), ad({ endAt: Timestamp.fromDate(new Date("2026-09-01")) })));
+    await assertFails(setDoc(doc(db, "advertisements/ad1"), ad({ placement: "POPUP" })));
+    await assertFails(setDoc(doc(db, "advertisements/ad1"), ad({ clicks: 1000 })));
+    await seed("advertisements/ad9", { ...ad({ advertisementId: "ad9" }), impressions: 5 });
+    await assertFails(updateDoc(doc(db, "advertisements/ad9"), { impressions: 9999, updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(db, "advertisements/ad9"), { isActive: false, updatedAt: serverTimestamp() }));
+  });
+
+  it("hides inactive ads and daily stats from the public", async () => {
+    await seed("advertisements/off", { ...ad({ advertisementId: "off" }), isActive: false });
+    await seed("advertisements/off/daily/2026-10-17", { clicks: 3 });
+    await assertFails(getDoc(doc(anon(), "advertisements/off")));
+    await assertFails(getDoc(doc(anon(), "advertisements/off/daily/2026-10-17")));
+    await assertSucceeds(getDoc(doc(as("owner", "OWNER"), "advertisements/off/daily/2026-10-17")));
+  });
+});
+
+describe("app settings", () => {
+  const settings = (extra: Record<string, unknown> = {}) => ({
+    channelName: "स्वराज्य न्यूज",
+    contactDetails: { phone: "+91 98765 43210", email: "news@example.com" },
+    socialLinks: { youtube: "https://www.youtube.com/@swarajyanews2025" },
+    updatedBy: "sa",
+    updatedAt: serverTimestamp(),
+    ...extra,
+  });
+
+  it("lets only the super admin write valid settings, and anyone read them", async () => {
+    await assertSucceeds(setDoc(doc(as("sa", "SUPER_ADMIN"), "appSettings/public"), settings()));
+    await assertSucceeds(getDoc(doc(anon(), "appSettings/public")));
+    await assertFails(setDoc(doc(as("ed", "EDITOR"), "appSettings/public"), settings({ updatedBy: "ed" })));
+    await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "appSettings/public"), settings({ socialLinks: { youtube: "javascript:alert(1)" } })));
+    await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "appSettings/other"), settings()));
+    await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "appSettings/public"), settings({ hacked: true })));
+  });
+});
+
 describe("suspended staff", () => {
   it("cannot write even while their old token still carries a role", async () => {
     await seed("news/d", draft("d", "rep1"));

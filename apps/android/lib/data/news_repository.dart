@@ -27,6 +27,12 @@ abstract class NewsRepository {
 
   /// Active talukas of a district, or villages of a taluka.
   Future<List<Place>> children(String parentId);
+
+  /// App banners running now.
+  Future<List<AppAd>> appBanners();
+
+  /// Channel settings, or defaults when none are saved.
+  Future<AppSettings> settings();
 }
 
 /// Shared search matching, used by every repository implementation.

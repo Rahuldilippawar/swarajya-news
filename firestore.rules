@@ -177,14 +177,59 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    function httpsUrl(v) { return v is string && v.size() <= 500 && v.matches('^https://[^\\s]+$'); }
+    function optionalHttps(m, key) { return !(key in m) || m[key] == '' || httpsUrl(m[key]); }
+
     match /appSettings/{id} {
       allow read: if true;
-      allow write: if isSuperAdmin() && isActiveStaff();
+      allow write: if isSuperAdmin() && isActiveStaff()
+        && id == 'public'
+        && request.resource.data.keys().hasOnly(['channelName', 'tagline', 'contactDetails', 'socialLinks', 'updatedAt', 'updatedBy'])
+        && request.resource.data.channelName is string && request.resource.data.channelName.size() > 0
+        && request.resource.data.contactDetails is map
+        && request.resource.data.contactDetails.keys().hasOnly(['phone', 'whatsapp', 'email', 'address'])
+        && request.resource.data.socialLinks is map
+        && request.resource.data.socialLinks.keys().hasOnly(['youtube', 'facebook', 'instagram', 'whatsapp', 'x'])
+        && optionalHttps(request.resource.data.socialLinks, 'youtube')
+        && optionalHttps(request.resource.data.socialLinks, 'facebook')
+        && optionalHttps(request.resource.data.socialLinks, 'instagram')
+        && optionalHttps(request.resource.data.socialLinks, 'whatsapp')
+        && optionalHttps(request.resource.data.socialLinks, 'x')
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // Ads are managed by the Owner and Super Admin. impressions/clicks are
+    // counted only by the recordAdEvent function.
+    function validAd(d) {
+      return d.keys().hasOnly(['advertisementId', 'title', 'imageUrl', 'targetUrl', 'placement', 'startAt', 'endAt',
+                               'isActive', 'impressions', 'clicks', 'createdAt', 'updatedAt'])
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 100
+        && d.imageUrl is string
+        && d.imageUrl.matches('^(https://|http://(127[.]0[.]0[.]1|localhost)(:[0-9]+)?/).*')
+        && httpsUrl(d.targetUrl)
+        && d.placement in ['HOME_TOP', 'HOME_INLINE', 'ARTICLE_TOP', 'ARTICLE_BOTTOM', 'SIDEBAR', 'APP_BANNER']
+        && d.startAt is timestamp && d.endAt is timestamp && d.endAt > d.startAt
+        && d.isActive is bool
+        && d.updatedAt == request.time;
     }
 
     match /advertisements/{id} {
       allow read: if resource.data.isActive == true || canManageAds();
-      allow write: if canManageAds() && isActiveStaff();
+      allow create: if canManageAds() && isActiveStaff()
+        && validAd(request.resource.data)
+        && request.resource.data.advertisementId == id
+        && !('impressions' in request.resource.data) && !('clicks' in request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if canManageAds() && isActiveStaff()
+        && validAd(request.resource.data)
+        && !changedKeys().hasAny(['advertisementId', 'impressions', 'clicks', 'createdAt']);
+      allow delete: if canManageAds() && isActiveStaff();
+
+      match /daily/{day} {
+        allow read: if canManageAds();
+        allow write: if false;
+      }
     }
 
     // ------------------------------------------ editorial & distribution records

@@ -11,7 +11,7 @@
 | 7 | Flutter Android app | ✅ Done (CI builds the APK; device testing pending) |
 | 8 | Push notifications | ✅ Done (real-device delivery test pending) |
 | 9 | WhatsApp integration | ✅ Done (live API test pending) |
-| 10 | Ads and reports | ⬜ |
+| 10 | Ads and reports | ✅ Done |
 | 11 | Security and testing | ⬜ |
 | 12 | Production launch | ⬜ |
 
@@ -191,8 +191,30 @@ approved template (docs/SETUP.md §8).
 - Admin → WhatsApp: Send bulletin, History (accepted/delivered/read/failed, failed numbers with errors, retry),
   Subscribers (counts, add, import, find, opt out/re-subscribe). "Send on WhatsApp" link on published articles.
 
-## Next: Milestone 10 — Ads and reports
+## Milestone 10 — Ads and reports ✅
 
-- Advertisement banners (placement, dates, active), shown on the website and app; click/impression counts.
-- Reports: daily/weekly/monthly, by reporter, category and location, most viewed; CSV export.
-- Settings page (contact details, social links) for the website and app.
+Acceptance: *admin can manage banners and export basic reports* — met, checked in a browser as Owner and Super Admin
+against the emulators (ads created, shown on the website, impressions and clicks counted; reports and CSV export).
+
+- **Advertisements** (Owner, Super Admin): title, banner upload (≤ 2 MB), https link, placement (website home top,
+  between sections, article top/bottom, side column; Android app banner), start/end, on/off; status (Running,
+  Scheduled, Ended, Off), impressions, clicks and CTR. Rules validate every field, only allow https links, and
+  keep the counters server-only.
+- **On the website and app**: banners labelled "जाहिरात", `rel="sponsored"`, random rotation when several share a
+  placement, expired/scheduled ads never shown. Impressions count once per page view when at least half the banner is
+  visible (app: once per session); clicks count each tap. The `recordAdEvent` function only counts running ads and
+  keeps per-day totals. Counts are indicative, not audited.
+- **Reports** (Super Admin, Owner, Editor): today / 7 / 30 / 90 days or custom dates (India time); published,
+  submitted, approved, returned, rejected, video news and views; daily chart (with table view); by reporter, category
+  and district; most viewed; CSV downloads that open correctly in Excel with Marathi text (UTF-8 BOM) and are
+  protected against formula injection. Built on the server by `getReport`, so the Owner gets complete numbers
+  without access to drafts.
+- **Settings** (Super Admin; others read-only): channel name, tagline, phone, WhatsApp, email, address, social links
+  — used by the website footer and Contact page and the app's Contact screen.
+
+## Next: Milestone 11 — Security and testing
+
+- Review every role end to end, Security Rules coverage, invalid/unavailable YouTube handling, network failures,
+  notification and WhatsApp errors.
+- Backup and restore procedure (scheduled Firestore exports) and a tested restore.
+- Billing/performance review, rate limiting for public endpoints, App Check rollout.

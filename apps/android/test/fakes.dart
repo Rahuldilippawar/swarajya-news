@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show FlutterError;
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:swarajya_news/ads/ad_tracker.dart';
 import 'package:swarajya_news/bootstrap.dart';
 import 'package:swarajya_news/data/models.dart';
 import 'package:swarajya_news/data/news_repository.dart';
@@ -50,9 +51,12 @@ const crime = Category(id: 'crime', slug: 'crime', name: 'गुन्हे');
 
 /// In-memory repository with the same paging and filtering behaviour as Firestore.
 class FakeNewsRepository implements NewsRepository {
-  FakeNewsRepository(this.articles, {this.failuresLeft = 0});
+  FakeNewsRepository(this.articles, {this.failuresLeft = 0, this.ads = const [], this.appSettings = AppSettings.defaults, this.adsFail = false});
 
   final List<Article> articles;
+  final List<AppAd> ads;
+  final AppSettings appSettings;
+  final bool adsFail;
 
   /// Number of upcoming calls that should fail, to exercise error and retry states.
   int failuresLeft;
@@ -104,6 +108,22 @@ class FakeNewsRepository implements NewsRepository {
 
   @override
   Future<List<Place>> children(String parentId) async => parentId == 'pune' ? const [haveli] : const [];
+
+  @override
+  Future<List<AppAd>> appBanners() async {
+    if (adsFail) throw const NewsLoadException();
+    return ads;
+  }
+
+  @override
+  Future<AppSettings> settings() async => appSettings;
+}
+
+class FakeAdTracker implements AdTracker {
+  final events = <String>[];
+
+  @override
+  Future<void> record(String adId, String type) async => events.add('$type:$adId');
 }
 
 /// Records subscriptions and lets tests simulate notifications.
@@ -151,10 +171,12 @@ Future<AppDependencies> Function() fakeBootstrap(
   FakeNewsRepository repo, {
   Map<String, Object> prefs = const {},
   FakePushService? push,
+  FakeAdTracker? tracker,
 }) {
   SharedPreferences.setMockInitialValues(prefs);
   final pushService = push ?? FakePushService();
-  return () async => AppDependencies(repo, await SavedNews.load(), pushService, await NotificationPrefs.load(pushService));
+  return () async =>
+      AppDependencies(repo, await SavedNews.load(), pushService, await NotificationPrefs.load(pushService), tracker ?? FakeAdTracker());
 }
 
 /// Widget tests have no network, so every thumbnail fails to load. The app

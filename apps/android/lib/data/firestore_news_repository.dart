@@ -120,4 +120,47 @@ class FirestoreNewsRepository implements NewsRepository {
             .get();
         return snap.docs.map(_toPlace).toList();
       });
+
+  @override
+  Future<List<AppAd>> appBanners() => _guard(() async {
+        // The public may only read active ads, so the query asks for exactly that.
+        final snap = await _db
+            .collection('advertisements')
+            .where('isActive', isEqualTo: true)
+            .where('placement', isEqualTo: 'APP_BANNER')
+            .get();
+        final now = DateTime.now();
+        return snap.docs
+            .map((d) {
+              final a = d.data();
+              final start = a['startAt'], end = a['endAt'];
+              if (start is! Timestamp || end is! Timestamp) return null;
+              return AppAd(
+                id: d.id,
+                title: a['title'] as String? ?? '',
+                imageUrl: a['imageUrl'] as String? ?? '',
+                targetUrl: a['targetUrl'] as String? ?? '',
+                startAt: start.toDate(),
+                endAt: end.toDate(),
+              );
+            })
+            .whereType<AppAd>()
+            .where((a) => a.isRunning(now) && a.targetUrl.startsWith('https://'))
+            .toList();
+      });
+
+  @override
+  Future<AppSettings> settings() => _guard(() async {
+        final snap = await _db.collection('appSettings').doc('public').get();
+        final s = snap.data();
+        if (s == null) return AppSettings.defaults;
+        Map<String, String> strings(Object? m) =>
+            {for (final e in (m as Map? ?? const {}).entries) if (e.value is String && (e.value as String).isNotEmpty) '${e.key}': e.value as String};
+        return AppSettings(
+          channelName: s['channelName'] as String? ?? AppSettings.defaults.channelName,
+          tagline: s['tagline'] as String?,
+          contact: strings(s['contactDetails']),
+          social: strings(s['socialLinks']),
+        );
+      });
 }

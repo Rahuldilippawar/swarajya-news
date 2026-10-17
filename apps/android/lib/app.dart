@@ -75,7 +75,13 @@ class _SwarajyaNewsAppState extends State<SwarajyaNewsApp> {
         final deps = _deps;
         return deps == null
             ? child!
-            : AppServices(repository: deps.repository, saved: deps.saved, notificationPrefs: deps.notificationPrefs, child: child!);
+            : AppServices(
+                repository: deps.repository,
+                saved: deps.saved,
+                notificationPrefs: deps.notificationPrefs,
+                adTracker: deps.adTracker,
+                child: child!,
+              );
       },
       home: SplashScreen<AppDependencies>(
         initialise: widget.bootstrap,
