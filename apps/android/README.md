@@ -15,7 +15,9 @@ Flutter app for reading and watching published Swarajya News stories. No login i
 - Loading, empty and error states with retry everywhere; pull to refresh; infinite scroll;
   1 column on phones, 2–3 on tablets; Marathi interface and dates.
 
-Push notifications arrive in Milestone 8.
+- **Notifications:** permission asked once, all-news alerts on by default, follow districts in
+  Menu → सूचना सेटिंग्ज; tapping a notification opens its article; a banner shows alerts that arrive while the
+  app is open. Topic names are in `lib/notifications/topics.dart` and must match `shared/src/notifications.ts`.
 
 ## Configure
 

@@ -8,8 +8,8 @@
 | 4 | Reporter workflow | ✅ Done |
 | 5 | Editorial approval | ✅ Done |
 | 6 | Public website | ✅ Done |
-| 7 | Flutter Android app | ✅ Done (device testing pending) |
-| 8 | Push notifications | ⬜ |
+| 7 | Flutter Android app | ✅ Done (CI builds the APK; device testing pending) |
+| 8 | Push notifications | ✅ Done (real-device delivery test pending) |
 | 9 | WhatsApp integration | ⬜ |
 | 10 | Ads and reports | ⬜ |
 | 11 | Security and testing | ⬜ |
@@ -149,8 +149,27 @@ Bugs the tests caught and that are fixed: services were not reachable from pushe
 would have crashed), retry buttons threw instead of retrying, the app bar overflowed on small phones, and the
 lead story filled a whole tablet screen.
 
-## Next: Milestone 8 — Push notifications
+## Milestone 8 — Push notifications ✅
 
-- FCM in the app (topic subscription, permission prompt on Android 13+), tapping a notification opens the article.
-- `sendNotification` Cloud Function for editors, with duplicate-send protection and a record in `notifications`.
-- Admin Panel → Notifications: compose, preview, send for a published article, history.
+Acceptance: *a test notification opens the correct news article* — met in app tests (tap, cold start from a
+notification, and the in-app banner all open the right article). **A real end-to-end delivery through Firebase Cloud
+Messaging still needs testing** with a real Firebase project and phone; the development sandbox cannot reach FCM.
+
+- **`sendNotification` Cloud Function** (EDITOR, SUPER_ADMIN, SOCIAL_MEDIA_MANAGER; active accounts only):
+  published articles only; title and message limits; audience *all readers* (`news_all`) or one district
+  (`district_<id>`). The job document ID is derived from article + audience, so double clicks or two editors
+  sending at once notify readers **once** (tested with simultaneous sends). Failures are recorded and can be
+  retried; every send/failure is in the audit log, with the sender's name kept on the job.
+- **Admin Panel → Notifications:** pick a published article (or use "Send a push notification" from the
+  article page), edit the prefilled title/message, choose the audience, see a phone-style preview and whether it
+  was already sent, confirm, and review the history (status, attempts, errors, retry).
+- **Android app:** asks for notification permission once (Android 13+), subscribes to all news by default,
+  **Notification settings** to turn that off and follow districts (re-applied each launch, survives offline),
+  tapping a notification opens its article (also when it launched the app), a banner with "पाहा" for
+  notifications that arrive while the app is open, a high-importance "बातम्या" channel.
+
+## Next: Milestone 9 — WhatsApp integration
+
+- Server-side sending through the existing WhatsApp Business API account (credentials in Secret Manager).
+- Approved template, recipient groups with consent and opt-out, webhook for delivery statuses.
+- Admin Panel: preview, confirm, history and failures; duplicate-send protection.

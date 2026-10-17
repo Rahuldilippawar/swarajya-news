@@ -453,6 +453,9 @@ export function NewsForm({ newsId, news }: { newsId?: string; news: NewsDoc | nu
               <section className="panel-card panel-form-stack">
                 <h2 style={{ margin: 0 }}>Workflow</h2>
                 <StatusActions status={status} role={role} isAuthor={isAuthor} busy={busy} onTransition={transition} />
+                {status === "PUBLISHED" && hasPermission(role, "notifications.send") && (
+                  <a href={`/notifications?newsId=${newsId}`} className="panel-hint">Send a push notification →</a>
+                )}
                 {!isEditor && status === "DRAFT" && (
                   <button type="button" className="panel-link" style={{ alignSelf: "flex-start" }} onClick={deleteDraft}>
                     Delete draft

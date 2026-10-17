@@ -84,6 +84,7 @@ tests in `tests/rules` check the important cases.
 | `setStaffStatus` | SUPER_ADMIN, OWNER* | Suspends or reactivates an account |
 | `updateStaffProfile` | SUPER_ADMIN, OWNER* | Updates name and assigned locations |
 | `transitionNews` | depends on the step (see workflow) | The only way to change an article's status; validates, checks the YouTube video, records reviews and audit logs |
+| `sendNotification` | EDITOR, SUPER_ADMIN, SOCIAL_MEDIA_MANAGER | Push notification for a published article to all readers or one district; once per article and audience |
 | `recordView` (HTTP) | anyone | Adds one view to a published article; silently ignores anything else |
 | `health` | anyone | Liveness check |
 

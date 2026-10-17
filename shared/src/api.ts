@@ -1,4 +1,5 @@
 import type { NewsStatus } from "./newsStatus";
+import type { NotificationTarget } from "./notifications";
 import type { Role, UserStatus } from "./roles";
 
 /**
@@ -26,6 +27,10 @@ export interface CallableApi {
   transitionNews: {
     request: { newsId: string; to: NewsStatus; remarks?: string };
     response: { newsId: string; status: NewsStatus; slug: string; videoStatus: VideoStatus | null };
+  };
+  sendNotification: {
+    request: { newsId: string; title: string; body: string; target: NotificationTarget };
+    response: { notificationId: string; status: "SENT"; providerMessageId: string };
   };
 }
 

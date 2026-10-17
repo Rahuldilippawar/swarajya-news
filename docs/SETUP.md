@@ -88,7 +88,17 @@ The app is generated with the application ID `com.swarajyanews.swarajya_news`
 (`apps/android/android/app/build.gradle.kts`). **Confirm the final ID before the
 first Play Store upload** — it can never change afterwards.
 
-## 7. Secrets
+## 7. Push notifications
+
+Firebase Cloud Messaging needs no extra keys: Cloud Functions send with the project's own service account.
+
+1. Firebase console → **Project settings → Cloud Messaging**: make sure the *Firebase Cloud Messaging API (V1)* is enabled.
+2. Install the app on a phone (built with that project's `config/<env>.json`) and allow notifications.
+3. Publish an article, then Admin Panel → **Notifications** → send to *All readers*. Tap the notification on the
+   phone: the app should open that article.
+4. Topics: `news_all` for everyone who keeps alerts on; `district_<districtId>` for readers following a district.
+
+## 8. Secrets
 
 | Secret | Where it lives |
 | --- | --- |
@@ -96,7 +106,7 @@ first Play Store upload** — it can never change afterwards.
 | Service-account keys | Never in the repo. Only used locally for provisioning. |
 | WhatsApp Business API token, YouTube Data API key | `npx firebase functions:secrets:set NAME` (Cloud Secret Manager) |
 
-## 8. Hosting
+## 9. Hosting
 
 The Next.js apps can be deployed to Firebase App Hosting or any Next.js host
 (e.g. Vercel). Use separate sites/domains, for example:

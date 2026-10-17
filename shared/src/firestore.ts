@@ -154,12 +154,21 @@ export interface NotificationDoc {
   notificationId: string;
   title: string;
   body: string;
-  newsId?: string;
-  targetType: "ALL" | "TOPIC" | "DISTRICT";
+  newsId: string;
+  slug: string;
+  targetType: "ALL" | "DISTRICT";
+  /** District ID when targetType is DISTRICT. */
   targetValue?: string;
+  topic: string;
   createdBy: string;
+  createdByName: string;
   createdAt: TimestampLike;
   status: JobStatus;
+  /** Number of send attempts (a FAILED job can be retried). */
+  attempts: number;
+  providerMessageId?: string;
+  error?: string;
+  sentAt?: TimestampLike;
 }
 
 export interface WhatsAppMessageDoc {

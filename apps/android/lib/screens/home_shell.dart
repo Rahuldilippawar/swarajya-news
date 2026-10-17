@@ -4,6 +4,7 @@ import '../data/models.dart';
 import '../widgets/brand_logo.dart';
 import 'feed_screen.dart';
 import 'info_screens.dart';
+import 'notification_settings_screen.dart';
 import 'search_screen.dart';
 import 'tabs/browse_tab.dart';
 import 'tabs/home_tab.dart';
@@ -61,6 +62,11 @@ class _HomeShellState extends State<HomeShell> {
             leading: const Icon(Icons.bolt),
             title: const Text('ब्रेकिंग न्यूज'),
             onTap: () => _push(const FeedScreen(title: 'ब्रेकिंग न्यूज', filter: BreakingNews(), emptyMessage: 'सध्या कोणतीही ब्रेकिंग न्यूज नाही.')),
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('सूचना सेटिंग्ज'),
+            onTap: () => _push(const NotificationSettingsScreen()),
           ),
           const Divider(),
           ListTile(leading: const Icon(Icons.info_outline), title: const Text('आमच्याबद्दल'), onTap: () => _push(const AboutScreen())),

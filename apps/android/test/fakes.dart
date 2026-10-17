@@ -6,6 +6,8 @@ import 'package:swarajya_news/bootstrap.dart';
 import 'package:swarajya_news/data/models.dart';
 import 'package:swarajya_news/data/news_repository.dart';
 import 'package:swarajya_news/data/saved_news.dart';
+import 'package:swarajya_news/notifications/notification_prefs.dart';
+import 'package:swarajya_news/notifications/push_service.dart';
 
 final now = DateTime.now();
 
@@ -104,9 +106,55 @@ class FakeNewsRepository implements NewsRepository {
   Future<List<Place>> children(String parentId) async => parentId == 'pune' ? const [haveli] : const [];
 }
 
-Future<AppDependencies> Function() fakeBootstrap(FakeNewsRepository repo, {Map<String, Object> prefs = const {}}) {
+/// Records subscriptions and lets tests simulate notifications.
+class FakePushService implements PushService {
+  final topics = <String>{};
+  int permissionRequests = 0;
+  bool failSubscriptions = false;
+  void Function(String newsId)? _onOpen;
+  void Function(PushAlert alert)? _onForeground;
+
+  /// A notification tap that launched the app, delivered on start.
+  String? launchNewsId;
+
+  @override
+  Future<void> start({required void Function(String newsId) onOpen, required void Function(PushAlert alert) onForeground}) async {
+    _onOpen = onOpen;
+    _onForeground = onForeground;
+    if (launchNewsId != null) onOpen(launchNewsId!);
+  }
+
+  @override
+  Future<bool> requestPermission() async {
+    permissionRequests++;
+    return true;
+  }
+
+  @override
+  Future<void> subscribe(String topic) async {
+    if (failSubscriptions) throw Exception('offline');
+    topics.add(topic);
+  }
+
+  @override
+  Future<void> unsubscribe(String topic) async {
+    if (failSubscriptions) throw Exception('offline');
+    topics.remove(topic);
+  }
+
+  void tap(String newsId) => _onOpen!(newsId);
+
+  void receive(PushAlert alert) => _onForeground!(alert);
+}
+
+Future<AppDependencies> Function() fakeBootstrap(
+  FakeNewsRepository repo, {
+  Map<String, Object> prefs = const {},
+  FakePushService? push,
+}) {
   SharedPreferences.setMockInitialValues(prefs);
-  return () async => AppDependencies(repo, await SavedNews.load());
+  final pushService = push ?? FakePushService();
+  return () async => AppDependencies(repo, await SavedNews.load(), pushService, await NotificationPrefs.load(pushService));
 }
 
 /// Widget tests have no network, so every thumbnail fails to load. The app

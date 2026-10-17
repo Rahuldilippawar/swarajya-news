@@ -4,6 +4,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { REGION } from "./admin";
 import { callable } from "./callable";
 import * as news from "./news";
+import * as notifications from "./notifications";
 import * as users from "./users";
 import { recordView as countView } from "./views";
 
@@ -37,3 +38,5 @@ export const recordView = onRequest({ cors: true, maxInstances: 5 }, async (req,
   }
   res.status(204).end();
 });
+
+export const sendNotification = callable("sendNotification", (caller, data) => notifications.sendNotification(caller, data));
