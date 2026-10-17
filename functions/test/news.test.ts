@@ -98,6 +98,19 @@ describe("transitionNews", () => {
     await expectCode(transitionNews(reporter, { newsId: "n1", to: "PUBLISHED" }, deps()), "permission-denied");
   });
 
+  it("only lets editors and super admins approve and publish", async () => {
+    for (const role of ["OWNER", "SOCIAL_MEDIA_MANAGER", "REPORTER"] as const) {
+      await seedNews("UNDER_REVIEW");
+      await expectCode(transitionNews({ uid: "x", role }, { newsId: "n1", to: "APPROVED" }, deps()), "permission-denied");
+      await seedNews("APPROVED");
+      await expectCode(transitionNews({ uid: "x", role }, { newsId: "n1", to: "PUBLISHED" }, deps()), "permission-denied");
+    }
+    await seedNews("APPROVED");
+    await expect(transitionNews({ uid: "sa", role: "SUPER_ADMIN" }, { newsId: "n1", to: "PUBLISHED" }, deps())).resolves.toMatchObject({
+      status: "PUBLISHED",
+    });
+  });
+
   it("rejects transitions that skip steps", async () => {
     await seedNews("DRAFT");
     await expectCode(transitionNews(editor, { newsId: "n1", to: "PUBLISHED" }, deps()), "failed-precondition");

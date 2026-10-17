@@ -5,7 +5,6 @@ export const ALLOWED_ROLES: readonly Role[] = ADMIN_PANEL_ROLES;
 
 /** Sections shown in the navigation but built in later milestones. */
 export const PLANNED_SECTIONS: Record<string, { label: string; milestone: number }> = {
-  "pending-approval": { label: "Pending Approval", milestone: 5 },
   advertisements: { label: "Advertisements", milestone: 10 },
   notifications: { label: "Notifications", milestone: 8 },
   whatsapp: { label: "WhatsApp", milestone: 9 },
@@ -15,9 +14,11 @@ export const PLANNED_SECTIONS: Record<string, { label: string; milestone: number
 
 export const NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/pending-approval", label: "Pending Approval", permission: "news.review" },
   { href: "/news", label: "News", permission: "news.editAny" },
   { href: "/categories", label: "Categories" },
   { href: "/locations", label: "Locations" },
   { href: "/reporters", label: "Staff & Reporters", permission: "users.manage" },
+  { href: "/audit-log", label: "Audit log", permission: "auditLogs.view" },
   ...Object.entries(PLANNED_SECTIONS).map(([slug, { label }]) => ({ href: `/${slug}`, label })),
 ];

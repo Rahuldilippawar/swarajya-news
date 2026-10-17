@@ -3,9 +3,10 @@
 import { errorMessage, getFirebase, useAuth } from "@swarajya/panel-kit";
 import { COLLECTIONS, hasPermission, type NewsStatus } from "@swarajya/shared";
 import { collection, getCountFromServer, query, where, type Query } from "firebase/firestore";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
-type Stat = { label: string; build: () => Query; permission: "news.editAny" | "users.manage" };
+type Stat = { label: string; build: () => Query; permission: "news.editAny" | "users.manage"; href?: string };
 
 function newsWhere(field: string, value: unknown): () => Query {
   return () => query(collection(getFirebase().db, COLLECTIONS.news), where(field, "==", value));
@@ -16,8 +17,9 @@ const STATS: Stat[] = [
   { label: "Total news", build: () => collection(getFirebase().db, COLLECTIONS.news), permission: "news.editAny" },
   { label: "Published", build: byStatus("PUBLISHED"), permission: "news.editAny" },
   { label: "Drafts", build: byStatus("DRAFT"), permission: "news.editAny" },
-  { label: "Pending approval", build: byStatus("SUBMITTED"), permission: "news.editAny" },
-  { label: "Under review", build: byStatus("UNDER_REVIEW"), permission: "news.editAny" },
+  { label: "Pending approval", build: byStatus("SUBMITTED"), permission: "news.editAny", href: "/pending-approval" },
+  { label: "Under review", build: byStatus("UNDER_REVIEW"), permission: "news.editAny", href: "/pending-approval" },
+  { label: "Ready to publish", build: byStatus("APPROVED"), permission: "news.editAny", href: "/pending-approval" },
   { label: "Returned", build: byStatus("CHANGES_REQUESTED"), permission: "news.editAny" },
   { label: "Rejected", build: byStatus("REJECTED"), permission: "news.editAny" },
   { label: "Video news", build: newsWhere("videoProvider", "YOUTUBE"), permission: "news.editAny" },
@@ -54,11 +56,16 @@ export default function DashboardPage() {
       <div className="panel-stats">
         {visible.map((s) => {
           const value = counts[s.label];
-          return (
-            <div key={s.label} className="panel-card">
+          const body = (
+            <>
               <span className="panel-muted">{s.label}</span>
               {typeof value === "string" ? <span className="panel-alert">{value}</span> : <strong>{value ?? "…"}</strong>}
-            </div>
+            </>
+          );
+          return s.href ? (
+            <Link key={s.label} href={s.href} className="panel-card" style={{ textDecoration: "none", color: "inherit" }}>{body}</Link>
+          ) : (
+            <div key={s.label} className="panel-card">{body}</div>
           );
         })}
       </div>

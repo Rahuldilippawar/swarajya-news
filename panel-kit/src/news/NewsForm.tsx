@@ -509,6 +509,11 @@ export function NewsForm({ newsId, news }: { newsId?: string; news: NewsDoc | nu
               <section className="panel-card">
                 <h2 style={{ marginTop: 0 }}>Editorial history</h2>
                 <EditorialHistory newsId={newsId} />
+                {hasPermission(role, "auditLogs.view") && (
+                  <p className="panel-hint" style={{ marginBottom: 0 }}>
+                    <a href={`/audit-log?target=${newsId}`}>Full audit trail</a>
+                  </p>
+                )}
               </section>
             )}
           </aside>

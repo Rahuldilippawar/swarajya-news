@@ -6,7 +6,7 @@
 | 2 | Authentication and roles | ✅ Done |
 | 3 | Firestore and news management | ✅ Done |
 | 4 | Reporter workflow | ✅ Done |
-| 5 | Editorial approval | 🟡 Backend and editor actions ready |
+| 5 | Editorial approval | ✅ Done |
 | 6 | Public website | ⬜ |
 | 7 | Flutter Android app | ⬜ |
 | 8 | Push notifications | ⬜ |
@@ -89,12 +89,23 @@ Acceptance: *a reporter can submit news and track its status* — met, and check
   without extra reads; the full history remains in `editorialReviews`.
 - The news editor, taxonomy hooks and status badge moved into `panel-kit`, shared by both panels.
 
-## Already in place for later milestones
+## Milestone 5 — Editorial approval ✅
 
-- **M5:** editors can already run every workflow step from the news editor; the workflow function enforces who may
-  approve and publish and records reviews and audit logs. What remains is the Pending Approval queue.
+Acceptance: *only authorised editors can approve and publish news* — met. Enforced by the `transitionNews` function
+(tests cover OWNER, SOCIAL_MEDIA_MANAGER and REPORTER being refused) and by Security Rules that block any client
+from writing `status`; checked in a browser with Editor, Owner and Super Admin accounts.
 
-## Next: Milestone 5 — Editorial approval
+- **Pending Approval** (Admin, editors and Super Admin only): three live queues — *waiting for review*,
+  *in review* (with the reviewer's name) and *approved, ready to publish* — oldest first, with breaking,
+  video-status and "resubmitted" badges. One-click Start review / Approve / Publish; request changes and reject
+  open the article because they need remarks. Publish is disabled when the video is known to be unavailable.
+- **Audit log** (Super Admin only): every staff and editorial action with who, when, what and details
+  (role changes, status moves, remarks); filter by news or staff accounts, drill into one record's full trail,
+  and open it from any article ("Full audit trail").
+- Dashboard cards for pending, in-review and ready-to-publish link straight to the queue.
 
-- Pending Approval page: submitted and under-review stories, oldest first, with quick review actions.
-- Audit log viewer for the Super Admin.
+## Next: Milestone 6 — Public website
+
+- Homepage, latest, breaking and video news, category and district pages reading published news from Firestore.
+- Article pages with the YouTube player, WhatsApp share, related news and view counts.
+- SEO: per-article metadata, Open Graph, NewsArticle structured data, sitemap with articles.
