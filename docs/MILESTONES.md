@@ -10,7 +10,7 @@
 | 6 | Public website | ✅ Done |
 | 7 | Flutter Android app | ✅ Done (CI builds the APK; device testing pending) |
 | 8 | Push notifications | ✅ Done (real-device delivery test pending) |
-| 9 | WhatsApp integration | ⬜ |
+| 9 | WhatsApp integration | ✅ Done (live API test pending) |
 | 10 | Ads and reports | ⬜ |
 | 11 | Security and testing | ⬜ |
 | 12 | Production launch | ⬜ |
@@ -168,8 +168,31 @@ Messaging still needs testing** with a real Firebase project and phone; the deve
   tapping a notification opens its article (also when it launched the app), a banner with "पाहा" for
   notifications that arrive while the app is open, a high-importance "बातम्या" channel.
 
-## Next: Milestone 9 — WhatsApp integration
+## Milestone 9 — WhatsApp integration ✅
 
-- Server-side sending through the existing WhatsApp Business API account (credentials in Secret Manager).
-- Approved template, recipient groups with consent and opt-out, webhook for delivery statuses.
-- Admin Panel: preview, confirm, history and failures; duplicate-send protection.
+Acceptance: *an authorised editor can send a test bulletin to an eligible recipient* — met against a local mock of
+Meta's Cloud API (browser test: add subscribers, preview, send, partial failure, retry, signed delivery receipts,
+STOP). **Not yet sent through the real WhatsApp API**: that needs the account's token, phone number ID and an
+approved template (docs/SETUP.md §8).
+
+- Provider: Meta WhatsApp Cloud API behind a `WhatsAppProvider` interface; credentials in Secret Manager.
+- Approved template `news_bulletin` (Marathi) matching the spec's message: label, headline, summary, link,
+  STOP instructions; parameters are cleaned to WhatsApp's rules.
+- Subscribers (personal data; readable by distribution staff only, written only by functions): Indian numbers
+  normalised to +91, one record per number, groups = all + districts, **consent source and recorder stored for
+  every addition**, bulk import (500 per batch, duplicates merged), opted-out numbers never re-added by imports.
+- Opt-out: STOP/बंद replies via the webhook, or Admin; opt-in: START replies (recorded as consent) or Admin with
+  new consent.
+- Sending: preview shows the exact message and recipient count; the send must confirm that count (refused if
+  the list changed); once per article and group; up to 1,000 recipients per run, 5 parallel requests; per-recipient
+  records; PARTIAL/FAILED jobs retry only the failed recipients; a crashed send can be retried after 15 minutes.
+- Webhook: Meta verification handshake, `X-Hub-Signature-256` check, delivered/read/failed receipts that only move
+  forward and keep the job's counts in step.
+- Admin → WhatsApp: Send bulletin, History (accepted/delivered/read/failed, failed numbers with errors, retry),
+  Subscribers (counts, add, import, find, opt out/re-subscribe). "Send on WhatsApp" link on published articles.
+
+## Next: Milestone 10 — Ads and reports
+
+- Advertisement banners (placement, dates, active), shown on the website and app; click/impression counts.
+- Reports: daily/weekly/monthly, by reporter, category and location, most viewed; CSV export.
+- Settings page (contact details, social links) for the website and app.

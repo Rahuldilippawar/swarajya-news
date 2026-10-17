@@ -98,15 +98,71 @@ Firebase Cloud Messaging needs no extra keys: Cloud Functions send with the proj
    phone: the app should open that article.
 4. Topics: `news_all` for everyone who keeps alerts on; `district_<districtId>` for readers following a district.
 
-## 8. Secrets
+## 8. WhatsApp Business API (Meta Cloud API)
+
+Bulletins are sent from the Admin Panel → **WhatsApp** through Meta's WhatsApp Cloud API. (Another provider such
+as Gupshup or Interakt can be added by implementing `WhatsAppProvider` in `functions/src/whatsapp/provider.ts`.)
+
+**1. Create the message template** in WhatsApp Manager → Message templates:
+
+- Name: `news_bulletin` (or set `WHATSAPP_TEMPLATE_NAME`), language **Marathi** (`mr`), category **Marketing**
+  (Meta classifies news alerts as marketing; utility is only for transactional messages).
+- Body — exactly this (it must match `BULLETIN_TEMPLATE_BODY` in `shared/src/whatsapp.ts`):
+
+  ```
+  स्वराज्य न्यूज — {{1}}
+
+  {{2}}
+
+  {{3}}
+
+  सविस्तर बातमी वाचा आणि व्हिडिओ पाहा:
+  {{4}}
+
+  सूचना बंद करण्यासाठी STOP पाठवा.
+  ```
+
+  Sample values for approval: `ब्रेकिंग न्यूज`, a headline, a summary, an article URL.
+
+**2. Configure Cloud Functions**
+
+```bash
+npx firebase functions:secrets:set WHATSAPP_ACCESS_TOKEN   # permanent System User token with whatsapp_business_messaging
+npx firebase functions:secrets:set WHATSAPP_APP_SECRET     # Meta app → Settings → Basic → App secret
+npx firebase functions:secrets:set WHATSAPP_VERIFY_TOKEN   # any long random string
+```
+
+In `functions/.env.<projectId>` (not committed):
+
+```
+PUBLIC_SITE_URL=https://your-website-domain
+WHATSAPP_PHONE_NUMBER_ID=<Phone number ID from WhatsApp Manager → API setup>
+```
+
+**3. Webhook** (delivery receipts and STOP/START replies): Meta app → WhatsApp → Configuration →
+Callback URL `https://asia-south1-<projectId>.cloudfunctions.net/whatsappWebhook`, Verify token = the
+`WHATSAPP_VERIFY_TOKEN` value; subscribe to the **messages** field. Every POST is checked against the app secret.
+
+**4. Subscribers and consent.** WhatsApp only allows business-initiated messages to people who agreed to receive
+them. Add people in Admin → WhatsApp → Subscribers (one at a time or a pasted list); each addition must say how
+they agreed, and this is stored with who recorded it. People can reply **STOP** (or बंद) to opt out and **START**
+to opt in; an import never re-subscribes someone who opted out.
+
+**5. Test** with your own number first: add it, publish an article, Admin → WhatsApp → Send bulletin to a district
+that only contains your number, and check History for *delivered* / *read*.
+
+Costs: Meta charges per marketing conversation (see Meta's pricing for India). One send is limited to 1,000
+recipients per run; larger lists need a queued sender (not built yet).
+
+## 9. Secrets
 
 | Secret | Where it lives |
 | --- | --- |
 | Firebase web config | `.env.local` in each Next.js app (public identifiers, not secrets) |
 | Service-account keys | Never in the repo. Only used locally for provisioning. |
-| WhatsApp Business API token, YouTube Data API key | `npx firebase functions:secrets:set NAME` (Cloud Secret Manager) |
+| WhatsApp access token, app secret, webhook verify token | `npx firebase functions:secrets:set NAME` (Cloud Secret Manager) — see section 8 |
 
-## 9. Hosting
+## 10. Hosting
 
 The Next.js apps can be deployed to Firebase App Hosting or any Next.js host
 (e.g. Vercel). Use separate sites/domains, for example:

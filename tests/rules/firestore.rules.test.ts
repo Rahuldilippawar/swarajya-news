@@ -208,6 +208,26 @@ describe("private source notes", () => {
   });
 });
 
+describe("whatsapp data", () => {
+  it("keeps subscriber phone numbers away from reporters, owners and the public", async () => {
+    await seed("users/smm", { uid: "smm", role: "SOCIAL_MEDIA_MANAGER", status: "ACTIVE" });
+    await seed("whatsappSubscribers/919876543210", { phone: "+919876543210", status: "SUBSCRIBED" });
+    await assertSucceeds(getDoc(doc(as("smm", "SOCIAL_MEDIA_MANAGER"), "whatsappSubscribers/919876543210")));
+    await assertSucceeds(getDoc(doc(as("ed", "EDITOR"), "whatsappSubscribers/919876543210")));
+    await assertFails(getDoc(doc(as("rep1", "REPORTER"), "whatsappSubscribers/919876543210")));
+    await assertFails(getDoc(doc(anon(), "whatsappSubscribers/919876543210")));
+    await assertFails(setDoc(doc(as("smm", "SOCIAL_MEDIA_MANAGER"), "whatsappSubscribers/1"), { phone: "+1", status: "SUBSCRIBED" }));
+  });
+
+  it("lets distribution staff read bulletin recipients but nobody read the delivery pointers", async () => {
+    await seed("whatsappMessages/p__ALL/recipients/91", { status: "FAILED" });
+    await seed("whatsappDeliveries/wamid.1", { jobId: "p__ALL" });
+    await assertSucceeds(getDoc(doc(as("ed", "EDITOR"), "whatsappMessages/p__ALL/recipients/91")));
+    await assertFails(getDoc(doc(as("rep1", "REPORTER"), "whatsappMessages/p__ALL/recipients/91")));
+    await assertFails(getDoc(doc(as("sa", "SUPER_ADMIN"), "whatsappDeliveries/wamid.1")));
+  });
+});
+
 describe("suspended staff", () => {
   it("cannot write even while their old token still carries a role", async () => {
     await seed("news/d", draft("d", "rep1"));

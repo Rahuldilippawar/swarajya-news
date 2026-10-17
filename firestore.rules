@@ -202,6 +202,23 @@ service cloud.firestore {
     match /whatsappMessages/{id} {
       allow read: if canDistribute();
       allow write: if false;
+
+      match /recipients/{recipientId} {
+        allow read: if canDistribute();
+        allow write: if false;
+      }
+    }
+
+    // Phone numbers and consent records: personal data. Readable only by
+    // distribution staff; written only by Cloud Functions (which record consent).
+    match /whatsappSubscribers/{id} {
+      allow read: if canDistribute() && isActiveStaff();
+      allow write: if false;
+    }
+
+    // Provider message ID → recipient pointers, used only by the webhook.
+    match /whatsappDeliveries/{id} {
+      allow read, write: if false;
     }
 
     match /auditLogs/{id} {

@@ -1,5 +1,5 @@
 import { logger } from "firebase-functions";
-import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { HttpsError, onCall, type CallableOptions } from "firebase-functions/v2/https";
 import { COLLECTIONS, isRole, type CallableName, type CallableResponse } from "@swarajya/shared";
 import { db } from "./admin";
 import type { Caller } from "./users";
@@ -26,8 +26,9 @@ export async function assertActiveCaller(uid: string): Promise<void> {
 export function callable<N extends CallableName>(
   name: N,
   handler: (caller: Caller, data: unknown) => Promise<CallableResponse<N>>,
+  options: Pick<CallableOptions, "secrets" | "timeoutSeconds" | "memory"> = {},
 ) {
-  return onCall({ enforceAppCheck }, async (request) => {
+  return onCall({ enforceAppCheck, ...options }, async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Sign in first.");
     const role = request.auth.token.role;
     const caller: Caller = { uid: request.auth.uid, role: isRole(role) ? role : null };

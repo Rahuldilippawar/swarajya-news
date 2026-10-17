@@ -32,6 +32,34 @@ export interface CallableApi {
     request: { newsId: string; title: string; body: string; target: NotificationTarget };
     response: { notificationId: string; status: "SENT"; providerMessageId: string };
   };
+  addWhatsAppSubscribers: {
+    /** consentSource records how these people agreed to receive bulletins (required by WhatsApp policy). */
+    request: { entries: WhatsAppSubscriberEntry[]; consentSource: string };
+    response: { added: number; updated: number; skippedOptedOut: number; invalid: string[] };
+  };
+  setWhatsAppSubscriberStatus: {
+    request: { phone: string; status: "SUBSCRIBED" | "OPTED_OUT"; consentSource?: string };
+    response: { phone: string; status: "SUBSCRIBED" | "OPTED_OUT" };
+  };
+  previewWhatsAppBulletin: {
+    request: { newsId: string; group: string };
+    response: { preview: string; recipients: number; templateName: string; alreadySent: boolean; tooMany: boolean };
+  };
+  sendWhatsAppBulletin: {
+    /** expectedRecipients must match the current list, so nobody sends to a list that grew since the preview. */
+    request: { newsId: string; group: string; expectedRecipients: number };
+    response: {
+      messageId: string;
+      status: "SENT" | "PARTIAL" | "FAILED";
+      counts: { total: number; accepted: number; failed: number };
+    };
+  };
+}
+
+export interface WhatsAppSubscriberEntry {
+  phone: string;
+  name?: string;
+  districtIds?: string[];
 }
 
 export type VideoStatus = "UNVERIFIED" | "AVAILABLE" | "UNAVAILABLE";

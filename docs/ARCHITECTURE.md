@@ -85,6 +85,9 @@ tests in `tests/rules` check the important cases.
 | `updateStaffProfile` | SUPER_ADMIN, OWNER* | Updates name and assigned locations |
 | `transitionNews` | depends on the step (see workflow) | The only way to change an article's status; validates, checks the YouTube video, records reviews and audit logs |
 | `sendNotification` | EDITOR, SUPER_ADMIN, SOCIAL_MEDIA_MANAGER | Push notification for a published article to all readers or one district; once per article and audience |
+| `addWhatsAppSubscribers`, `setWhatsAppSubscriberStatus` | EDITOR, SUPER_ADMIN, SOCIAL_MEDIA_MANAGER | Subscribers with recorded consent; opt-out / re-subscribe (re-subscribing needs new consent) |
+| `previewWhatsAppBulletin`, `sendWhatsAppBulletin` | same | Exact message + recipient count; send once per article and group, must confirm the count; retries only failed recipients |
+| `whatsappWebhook` (HTTP) | Meta (signed) | Delivery/read receipts and STOP/START replies |
 | `recordView` (HTTP) | anyone | Adds one view to a published article; silently ignores anything else |
 | `health` | anyone | Liveness check |
 

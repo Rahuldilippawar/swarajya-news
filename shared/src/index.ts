@@ -6,6 +6,7 @@ export * from "./validation";
 export * from "./firestore";
 export * from "./api";
 export * from "./notifications";
+export * from "./whatsapp";
 
 export const CHANNEL = {
   name: "Swarajya News",

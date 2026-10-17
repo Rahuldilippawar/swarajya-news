@@ -456,6 +456,9 @@ export function NewsForm({ newsId, news }: { newsId?: string; news: NewsDoc | nu
                 {status === "PUBLISHED" && hasPermission(role, "notifications.send") && (
                   <a href={`/notifications?newsId=${newsId}`} className="panel-hint">Send a push notification →</a>
                 )}
+                {status === "PUBLISHED" && hasPermission(role, "whatsapp.send") && (
+                  <a href={`/whatsapp?newsId=${newsId}`} className="panel-hint">Send on WhatsApp →</a>
+                )}
                 {!isEditor && status === "DRAFT" && (
                   <button type="button" className="panel-link" style={{ alignSelf: "flex-start" }} onClick={deleteDraft}>
                     Delete draft

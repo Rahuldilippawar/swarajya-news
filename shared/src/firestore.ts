@@ -11,6 +11,9 @@ export const COLLECTIONS = {
   editorialReviews: "editorialReviews",
   notifications: "notifications",
   whatsappMessages: "whatsappMessages",
+  whatsappSubscribers: "whatsappSubscribers",
+  /** providerMessageId → bulletin recipient, so delivery webhooks can find their record. */
+  whatsappDeliveries: "whatsappDeliveries",
   advertisements: "advertisements",
   auditLogs: "auditLogs",
   appSettings: "appSettings",
@@ -171,14 +174,41 @@ export interface NotificationDoc {
   sentAt?: TimestampLike;
 }
 
+/** One bulletin: an article sent to a recipient group. Document ID: bulletinJobId(newsId, group). */
 export interface WhatsAppMessageDoc {
   messageId: string;
   newsId: string;
   templateName: string;
   recipientGroup: string;
-  providerMessageId?: string;
-  status: JobStatus | "DELIVERED" | "READ";
+  /** The rendered message, as recipients see it. */
+  preview: string;
+  status: "SENDING" | "SENT" | "PARTIAL" | "FAILED";
+  counts: { total: number; accepted: number; failed: number; delivered: number; read: number };
+  attempts: number;
   requestedBy: string;
+  requestedByName: string;
+  createdAt: TimestampLike;
+  updatedAt: TimestampLike;
+}
+
+/** whatsappMessages/{jobId}/recipients/{subscriberId}: one recipient of one bulletin. */
+export interface WhatsAppRecipientDoc {
+  phone: string;
+  status: "ACCEPTED" | "FAILED" | "SENT" | "DELIVERED" | "READ";
+  providerMessageId?: string;
+  error?: string;
+  updatedAt: TimestampLike;
+}
+
+/** whatsappSubscribers/{subscriberId}. Phone numbers are personal data: functions write, distribution staff read. */
+export interface WhatsAppSubscriberDoc {
+  phone: string;
+  name?: string;
+  /** "ALL" plus any district IDs whose bulletins they receive. */
+  groups: string[];
+  status: "SUBSCRIBED" | "OPTED_OUT";
+  consent: { source: string; recordedBy: string; at: TimestampLike };
+  optedOutAt?: TimestampLike;
   createdAt: TimestampLike;
   updatedAt: TimestampLike;
 }

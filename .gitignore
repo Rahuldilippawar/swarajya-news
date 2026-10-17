@@ -11,8 +11,10 @@ next-env.d.ts
 .env
 .env.*
 !.env.example
+!functions/.env
 *.local
 service-account*.json
+.secret.local
 .firebaserc
 
 # Firebase
