@@ -36,6 +36,13 @@ jobs:
           flutter-version: "3.35.7"
           channel: stable
           cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      # Proves the Android build (Gradle, plugins, minSdk) works. The example config
+      # has placeholder Firebase values, so this APK compiles but cannot load news.
+      - run: flutter build apk --debug --dart-define-from-file=config/example.json

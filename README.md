@@ -48,10 +48,10 @@ npm run dev:website              # http://localhost:3000
 npm run dev:admin                # http://localhost:3001
 npm run dev:reporter             # http://localhost:3002
 
-# Android app
+# Android app (see apps/android/README.md for config/dev.json)
 cd apps/android
 flutter pub get
-flutter run
+flutter run --dart-define-from-file=config/dev.json
 ```
 
 To work fully offline against the Firebase emulators, set
@@ -91,4 +91,4 @@ is created from the Admin Panel. See [docs/SETUP.md](docs/SETUP.md#2-create-the-
 
 ## Status
 
-Milestones 1–6 (setup, roles, news management, reporter workflow, editorial approval, public website) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.
+Milestones 1–7 (setup, roles, news management, reporter workflow, editorial approval, public website, Android app) are complete. See [docs/MILESTONES.md](docs/MILESTONES.md) for what is done and what comes next.

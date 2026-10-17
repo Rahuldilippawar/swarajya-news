@@ -8,7 +8,7 @@
 | 4 | Reporter workflow | ✅ Done |
 | 5 | Editorial approval | ✅ Done |
 | 6 | Public website | ✅ Done |
-| 7 | Flutter Android app | ⬜ |
+| 7 | Flutter Android app | ✅ Done (device testing pending) |
 | 8 | Push notifications | ⬜ |
 | 9 | WhatsApp integration | ⬜ |
 | 10 | Ads and reports | ⬜ |
@@ -129,8 +129,28 @@ Firestore anonymously, so the Security Rules (which allow only published news) a
 Not yet: advertisement slots (Milestone 10) and instant cache refresh on publish (currently up to a minute; can
 be added with on-demand revalidation).
 
-## Next: Milestone 7 — Flutter Android app
+## Milestone 7 — Flutter Android app ✅
 
-- Connect Firebase, list published news (home, latest, breaking, video, categories, locations), search.
-- Article screen with YouTube playback, WhatsApp share and saved news.
-- Loading, empty and error states; tablet layout.
+Acceptance: *Android users can browse and watch published news* — met in widget tests (34 passing, run against an
+in-memory repository); `flutter analyze` is clean. **Not yet run on a phone**: the Android SDK could not be
+downloaded in the development sandbox, so CI now builds a debug APK on every push and a real-device check is
+still needed with a real Firebase config.
+
+- Home (breaking strip, featured, latest, categories), video news and Shorts, categories, district → taluka →
+  village news, search with filters, saved news (offline, on device), about/contact/privacy.
+- Article screen: text, photo, click-to-play YouTube's embedded player with "open in YouTube" fallback, event
+  time, tags, related news, WhatsApp and system share, save.
+- Loading, empty and error states with retry, pull to refresh, infinite scroll, phone and tablet layouts
+  (checked down to 320 px wide), Marathi UI and dates.
+- Reads only published news with the website's queries, so no new indexes or rules were needed.
+- Firebase settings come from `--dart-define-from-file`, so nothing project-specific is committed.
+
+Bugs the tests caught and that are fixed: services were not reachable from pushed screens (every article tap
+would have crashed), retry buttons threw instead of retrying, the app bar overflowed on small phones, and the
+lead story filled a whole tablet screen.
+
+## Next: Milestone 8 — Push notifications
+
+- FCM in the app (topic subscription, permission prompt on Android 13+), tapping a notification opens the article.
+- `sendNotification` Cloud Function for editors, with duplicate-send protection and a record in `notifications`.
+- Admin Panel → Notifications: compose, preview, send for a published article, history.
