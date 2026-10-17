@@ -1,0 +1,282 @@
+rules_version = '2';
+
+// Swarajya News — Firestore Security Rules.
+//
+// Roles come from the `role` custom claim on the Firebase Auth ID token. The
+// claim is set only by Cloud Functions / the Admin SDK (functions/src/scripts/setRole.ts),
+// so users can never grant themselves a role by editing Firestore.
+//
+// Status changes on news (submit, review, approve, publish, archive) are NOT
+// allowed from clients. They go through Cloud Functions, which enforce the
+// editorial workflow in shared/src/newsStatus.ts and write the audit log.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function role() { return signedIn() ? request.auth.token.get('role', '') : ''; }
+    function hasAnyRole(roles) { return role() in roles; }
+
+    function isSuperAdmin() { return role() == 'SUPER_ADMIN'; }
+    function canManageUsers() { return hasAnyRole(['SUPER_ADMIN', 'OWNER']); }
+    function canEditAnyNews() { return hasAnyRole(['SUPER_ADMIN', 'EDITOR']); }
+    function canCreateNews() { return hasAnyRole(['SUPER_ADMIN', 'EDITOR', 'REPORTER']); }
+    function canDistribute() { return hasAnyRole(['SUPER_ADMIN', 'EDITOR', 'SOCIAL_MEDIA_MANAGER']); }
+    function canManageAds() { return hasAnyRole(['SUPER_ADMIN', 'OWNER']); }
+
+    // Suspension takes effect at once: a token issued before suspension still
+    // carries the role claim, so writes also require users/{uid}.status == ACTIVE.
+    function isActiveStaff() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('status', '') == 'ACTIVE';
+    }
+
+    function changedKeys() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Fields an author may write while the article is a draft or was returned for changes.
+    function contentFields() {
+      return ['headline', 'summary', 'content', 'categoryId', 'districtId', 'talukaId', 'villageId',
+              'thumbnailUrl', 'youtubeUrl', 'youtubeVideoId', 'videoProvider', 'tags', 'eventAt',
+              'seoTitle', 'seoDescription', 'updatedAt'];
+    }
+    // Additional presentation fields only editors may change.
+    function editorFields() {
+      return contentFields().concat(['slug', 'isBreaking', 'isFeatured', 'reporterId', 'reporterUid', 'reporterName']);
+    }
+
+    // Same shape as shared isValidSlug(): letters/marks/digits in hyphen-separated runs, no URL characters.
+    function validSlug(v) {
+      return v is string && v.size() > 0 && v.size() <= 100 && v.matches('^[^-/?#%&\\s<>"\'\\\\.]+(-[^-/?#%&\\s<>"\'\\\\.]+)*$');
+    }
+
+    function validNewsContent(d) {
+      return d.headline is string && d.headline.size() > 0 && d.headline.size() <= 200
+        && (!('slug' in d) || validSlug(d.slug))
+        && (!('summary' in d) || (d.summary is string && d.summary.size() <= 500))
+        && (!('content' in d) || (d.content is string && d.content.size() <= 50000))
+        && (!('tags' in d) || (d.tags is list && d.tags.size() <= 15))
+        && (!('eventAt' in d) || d.eventAt is timestamp)
+        && (!('youtubeVideoId' in d) || d.youtubeVideoId == null
+            || (d.youtubeVideoId is string && d.youtubeVideoId.matches('^[A-Za-z0-9_-]{11}$')))
+        && (!('thumbnailUrl' in d) || d.thumbnailUrl == null
+            || (d.thumbnailUrl is string
+                && d.thumbnailUrl.matches('^(https://|http://(127[.]0[.]0[.]1|localhost)(:[0-9]+)?/).*')));
+    }
+
+    // ---------------------------------------------------------------- users
+    match /users/{uid} {
+      // Own profile always (the panel shows a suspended user why they are locked out); others only to active staff.
+      allow read: if signedIn() && (request.auth.uid == uid || ((canManageUsers() || canEditAnyNews()) && isActiveStaff()));
+      allow write: if false; // Managed by Cloud Functions.
+    }
+
+    // ----------------------------------------------------------------- news
+    match /news/{newsId} {
+      function isAuthor() { return signedIn() && resource.data.reporterUid == request.auth.uid; }
+
+      // Public feeds must query with where('status', '==', 'PUBLISHED').
+      // Unpublished news only to active staff, so a suspended account loses access at once.
+      allow read: if resource.data.status == 'PUBLISHED' || ((canEditAnyNews() || isAuthor()) && isActiveStaff());
+
+      allow create: if canCreateNews()
+        && isActiveStaff()
+        && request.resource.data.keys().hasOnly(editorFields().concat(['newsId', 'status', 'viewCount', 'createdAt']))
+        && request.resource.data.newsId == newsId
+        && request.resource.data.status == 'DRAFT'
+        && request.resource.data.viewCount == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.reporterUid is string
+        && (canEditAnyNews() || (
+              request.resource.data.reporterUid == request.auth.uid
+              && request.resource.data.get('isBreaking', false) == false
+              && request.resource.data.get('isFeatured', false) == false))
+        && validNewsContent(request.resource.data);
+
+      allow update: if isActiveStaff()
+        && validNewsContent(request.resource.data)
+        && request.resource.data.updatedAt == request.time
+        // A published video is verified by Cloud Functions; unpublish to change it.
+        && !(resource.data.status == 'PUBLISHED' && changedKeys().hasAny(['youtubeUrl', 'youtubeVideoId']))
+        && (
+          (canEditAnyNews() && changedKeys().hasOnly(editorFields()))
+          || (isAuthor()
+              && resource.data.status in ['DRAFT', 'CHANGES_REQUESTED']
+              && changedKeys().hasOnly(contentFields()))
+        );
+
+      allow delete: if isAuthor() && isActiveStaff() && resource.data.status == 'DRAFT';
+    }
+
+    // Private source notes: visible to the article's reporter and editors only,
+    // even after the article is published. The author may edit them while the
+    // article is editable by them; editors at any time.
+    match /news/{newsId}/private/{docId} {
+      function article() { return get(/databases/$(database)/documents/news/$(newsId)).data; }
+      function isArticleAuthor() { return signedIn() && article().reporterUid == request.auth.uid; }
+
+      allow read: if (canEditAnyNews() || isArticleAuthor()) && isActiveStaff();
+      allow create, update: if isActiveStaff()
+        && docId == 'sourceNotes'
+        && request.resource.data.keys().hasOnly(['notes', 'updatedAt'])
+        && request.resource.data.notes is string
+        && request.resource.data.notes.size() <= 2000
+        && request.resource.data.updatedAt == request.time
+        && (canEditAnyNews() || (isArticleAuthor() && article().status in ['DRAFT', 'CHANGES_REQUESTED']));
+      allow delete: if false;
+    }
+
+    // ------------------------------------------------------ taxonomy & settings
+    // Categories use their slug as document ID, so a category URL never changes
+    // and two categories can never share a slug. Deactivate instead of deleting.
+    function validCategory(d) {
+      return d.keys().hasOnly(['categoryId', 'name', 'nameEn', 'slug', 'description', 'isActive', 'displayOrder', 'createdAt', 'updatedAt'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && (!('nameEn' in d) || (d.nameEn is string && d.nameEn.size() <= 60))
+        && (!('description' in d) || (d.description is string && d.description.size() <= 300))
+        && d.isActive is bool
+        && d.displayOrder is int
+        && d.updatedAt == request.time;
+    }
+
+    match /categories/{id} {
+      allow read: if resource.data.isActive == true || signedIn();
+      allow create: if isSuperAdmin() && isActiveStaff()
+        && validCategory(request.resource.data)
+        && request.resource.data.categoryId == id
+        && request.resource.data.slug == id
+        && id.matches('^[^/\\s]{1,60}$')
+        && request.resource.data.createdAt == request.time;
+      allow update: if isSuperAdmin() && isActiveStaff()
+        && validCategory(request.resource.data)
+        && !changedKeys().hasAny(['categoryId', 'slug', 'createdAt']);
+      allow delete: if false;
+    }
+
+    // Locations form a fixed hierarchy: STATE → DISTRICT → TALUKA → VILLAGE.
+    function parentTypeOf(type) {
+      return {'DISTRICT': 'STATE', 'TALUKA': 'DISTRICT', 'VILLAGE': 'TALUKA'}[type];
+    }
+
+    function validLocation(d) {
+      return d.keys().hasOnly(['locationId', 'name', 'nameEn', 'slug', 'type', 'parentLocationId', 'isActive', 'createdAt', 'updatedAt'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 80
+        && (!('nameEn' in d) || (d.nameEn is string && d.nameEn.size() <= 80))
+        && d.slug is string && d.slug.matches('^[^/\\s]{1,60}$')
+        && d.type in ['STATE', 'DISTRICT', 'TALUKA', 'VILLAGE']
+        && d.isActive is bool
+        && d.updatedAt == request.time;
+    }
+
+    match /locations/{id} {
+      allow read: if resource.data.isActive == true || signedIn();
+      allow create: if isSuperAdmin() && isActiveStaff()
+        && validLocation(request.resource.data)
+        && request.resource.data.locationId == id
+        && request.resource.data.createdAt == request.time
+        && (request.resource.data.type == 'STATE'
+              ? request.resource.data.parentLocationId == null
+              : request.resource.data.parentLocationId is string
+                && get(/databases/$(database)/documents/locations/$(request.resource.data.parentLocationId)).data.type
+                   == parentTypeOf(request.resource.data.type));
+      allow update: if isSuperAdmin() && isActiveStaff()
+        && validLocation(request.resource.data)
+        && !changedKeys().hasAny(['locationId', 'type', 'parentLocationId', 'createdAt']);
+      allow delete: if false;
+    }
+
+    function httpsUrl(v) { return v is string && v.size() <= 500 && v.matches('^https://[^\\s]+$'); }
+    function optionalHttps(m, key) { return !(key in m) || m[key] == '' || httpsUrl(m[key]); }
+
+    match /appSettings/{id} {
+      allow read: if true;
+      allow write: if isSuperAdmin() && isActiveStaff()
+        && id == 'public'
+        && request.resource.data.keys().hasOnly(['channelName', 'tagline', 'contactDetails', 'socialLinks', 'updatedAt', 'updatedBy'])
+        && request.resource.data.channelName is string && request.resource.data.channelName.size() > 0
+        && request.resource.data.contactDetails is map
+        && request.resource.data.contactDetails.keys().hasOnly(['phone', 'whatsapp', 'email', 'address'])
+        && request.resource.data.socialLinks is map
+        && request.resource.data.socialLinks.keys().hasOnly(['youtube', 'facebook', 'instagram', 'whatsapp', 'x'])
+        && optionalHttps(request.resource.data.socialLinks, 'youtube')
+        && optionalHttps(request.resource.data.socialLinks, 'facebook')
+        && optionalHttps(request.resource.data.socialLinks, 'instagram')
+        && optionalHttps(request.resource.data.socialLinks, 'whatsapp')
+        && optionalHttps(request.resource.data.socialLinks, 'x')
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // Ads are managed by the Owner and Super Admin. impressions/clicks are
+    // counted only by the recordAdEvent function.
+    function validAd(d) {
+      return d.keys().hasOnly(['advertisementId', 'title', 'imageUrl', 'targetUrl', 'placement', 'startAt', 'endAt',
+                               'isActive', 'impressions', 'clicks', 'createdAt', 'updatedAt'])
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 100
+        && d.imageUrl is string
+        && d.imageUrl.matches('^(https://|http://(127[.]0[.]0[.]1|localhost)(:[0-9]+)?/).*')
+        && httpsUrl(d.targetUrl)
+        && d.placement in ['HOME_TOP', 'HOME_INLINE', 'ARTICLE_TOP', 'ARTICLE_BOTTOM', 'SIDEBAR', 'APP_BANNER']
+        && d.startAt is timestamp && d.endAt is timestamp && d.endAt > d.startAt
+        && d.isActive is bool
+        && d.updatedAt == request.time;
+    }
+
+    match /advertisements/{id} {
+      allow read: if resource.data.isActive == true || (canManageAds() && isActiveStaff());
+      allow create: if canManageAds() && isActiveStaff()
+        && validAd(request.resource.data)
+        && request.resource.data.advertisementId == id
+        && !('impressions' in request.resource.data) && !('clicks' in request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if canManageAds() && isActiveStaff()
+        && validAd(request.resource.data)
+        && !changedKeys().hasAny(['advertisementId', 'impressions', 'clicks', 'createdAt']);
+      allow delete: if canManageAds() && isActiveStaff();
+
+      match /daily/{day} {
+        allow read: if canManageAds() && isActiveStaff();
+        allow write: if false;
+      }
+    }
+
+    // ------------------------------------------ editorial & distribution records
+    match /editorialReviews/{id} {
+      allow read: if isActiveStaff() && (canEditAnyNews()
+        || get(/databases/$(database)/documents/news/$(resource.data.newsId)).data.reporterUid == request.auth.uid);
+      allow write: if false; // Written by Cloud Functions alongside status changes.
+    }
+
+    match /notifications/{id} {
+      allow read: if canDistribute() && isActiveStaff();
+      allow write: if false;
+    }
+
+    match /whatsappMessages/{id} {
+      allow read: if canDistribute() && isActiveStaff();
+      allow write: if false;
+
+      match /recipients/{recipientId} {
+        allow read: if canDistribute() && isActiveStaff();
+        allow write: if false;
+      }
+    }
+
+    // Phone numbers and consent records: personal data. Readable only by
+    // distribution staff; written only by Cloud Functions (which record consent).
+    match /whatsappSubscribers/{id} {
+      allow read: if canDistribute() && isActiveStaff();
+      allow write: if false;
+    }
+
+    // Provider message ID → recipient pointers, used only by the webhook.
+    match /whatsappDeliveries/{id} {
+      allow read, write: if false;
+    }
+
+    match /auditLogs/{id} {
+      allow read: if isSuperAdmin() && isActiveStaff();
+      allow write: if false;
+    }
+  }
+}

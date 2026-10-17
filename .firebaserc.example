@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "swarajya-news-dev",
+    "dev": "swarajya-news-dev",
+    "prod": "swarajya-news-prod"
+  }
+}

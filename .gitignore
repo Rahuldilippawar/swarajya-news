@@ -1,0 +1,31 @@
+node_modules/
+.next/
+out/
+functions/lib/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment and secrets — never commit real values
+.env
+.env.*
+!.env.example
+!functions/.env
+*.local
+service-account*.json
+.secret.local
+.firebaserc
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+emulator-data/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

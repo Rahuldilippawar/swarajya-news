@@ -1,0 +1,60 @@
+# Deploys Firestore rules and indexes, Storage rules and Cloud Functions. Run it
+# by hand from the Actions tab. Each target is a GitHub environment (dev,
+# production) holding (docs/LAUNCH.md):
+#   secret   FIREBASE_SERVICE_ACCOUNT  JSON key of the deploy service account
+#   variable FIREBASE_PROJECT_ID, PUBLIC_SITE_URL, WHATSAPP_PHONE_NUMBER_ID
+#   variable ENFORCE_APP_CHECK (optional, "true" once App Check is verified)
+# Add required reviewers to the production environment so a deploy needs approval.
+name: Deploy backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target
+        type: choice
+        options: [dev, production]
+        required: true
+
+concurrency: deploy-${{ inputs.environment }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: npm ci
+      # Never deploy what has not passed the same checks as CI.
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:rules
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Function parameters for this project
+        env:
+          PROJECT: ${{ vars.FIREBASE_PROJECT_ID }}
+          SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          PHONE_NUMBER_ID: ${{ vars.WHATSAPP_PHONE_NUMBER_ID }}
+          APP_CHECK: ${{ vars.ENFORCE_APP_CHECK || 'false' }}
+        run: |
+          test -n "$PROJECT" || { echo "FIREBASE_PROJECT_ID is not set for this environment"; exit 1; }
+          printf 'PUBLIC_SITE_URL=%s\nWHATSAPP_PHONE_NUMBER_ID=%s\nENFORCE_APP_CHECK=%s\n' \
+            "$SITE_URL" "$PHONE_NUMBER_ID" "$APP_CHECK" > "functions/.env.$PROJECT"
+      - name: Deploy
+        env:
+          PROJECT: ${{ vars.FIREBASE_PROJECT_ID }}
+        run: npx firebase deploy --only firestore,storage,functions --project "$PROJECT" --non-interactive
+      - name: Smoke test
+        env:
+          PROJECT: ${{ vars.FIREBASE_PROJECT_ID }}
+        run: node scripts/smoke.mjs --functions "https://asia-south1-$PROJECT.cloudfunctions.net"

@@ -1,0 +1,53 @@
+# Builds the signed Android App Bundle for Google Play. Run it by hand from the
+# Actions tab; it needs the "production" environment's secrets (docs/LAUNCH.md):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+#   ANDROID_KEY_PASSWORD, ANDROID_PROD_CONFIG_JSON (contents of config/prod.json).
+name: Release Android
+
+on:
+  workflow_dispatch:
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: apps/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.7"
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Write signing key and production config
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          PROD_CONFIG: ${{ secrets.ANDROID_PROD_CONFIG_JSON }}
+        run: |
+          test -n "$KEYSTORE_BASE64" && test -n "$PROD_CONFIG" || { echo "Release secrets are missing"; exit 1; }
+          echo "$KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+          printf 'storeFile=../upload-keystore.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > android/key.properties
+          echo "$PROD_CONFIG" > config/prod.json
+          # Refuse to ship a bundle that points at the dev project or an emulator.
+          python3 -c "import json,sys; c=json.load(open('config/prod.json')); sys.exit('FIRESTORE_EMULATOR_HOST must be empty' if c.get('FIRESTORE_EMULATOR_HOST') else 0 if c.get('SITE_URL','').startswith('https://') else 'SITE_URL must be https')"
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build appbundle --release --dart-define-from-file=config/prod.json
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/upload-keystore.jks android/key.properties config/prod.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swarajya-news-${{ github.run_number }}.aab
+          path: apps/android/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
