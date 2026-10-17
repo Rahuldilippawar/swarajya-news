@@ -25,7 +25,7 @@ Reporter submits → Editor reviews → Editor approves → Published on website
 | `panel-kit` | Firebase client, auth state, role guard and login form shared by both panels | React |
 | `tests/rules` | Firestore Security Rules tests (run against the emulator) | Vitest |
 | `firestore.rules`, `storage.rules`, `firestore.indexes.json` | Backend security and indexes | — |
-| `docs/` | Architecture, setup, launch, security, operations and milestone notes | — |
+| `docs/` | Architecture, setup, launch, security, operations, staff guide (Marathi) and milestone notes | — |
 | `scripts/smoke.mjs` | Post-deploy smoke test (`npm run smoke`) | Node |
 
 ## Prerequisites

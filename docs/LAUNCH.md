@@ -127,7 +127,7 @@ who gave consent, and send a first bulletin to a small test group.
 - [ ] Smoke test passes on the production domains.
 - [ ] At least 10–15 published articles, with photos or videos, across several districts and categories.
 - [ ] Contact, privacy and editorial pages approved; Settings complete.
-- [ ] Every staff member has signed in once; reporters know how to submit, editors how to approve.
+- [ ] Every staff member has signed in once and read [STAFF_GUIDE.md](STAFF_GUIDE.md) (Marathi how-to for each role); one practice story has gone from reporter to published.
 - [ ] Backups scheduled; one restore drill done; alerts and budget set.
 - [ ] Android app in testing on newsroom phones (Production when Play approves).
 - [ ] Search Console: add the website property and submit `https://swarajyanews.in/sitemap.xml`.
