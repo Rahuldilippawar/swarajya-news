@@ -1,0 +1,66 @@
+# Makes an existing Firebase Auth account a Super Admin and, optionally, loads
+# the starter data (Maharashtra, its districts and default categories). Run it
+# by hand from the Actions tab; it uses the same environment secrets as
+# "Deploy backend". Create the account first in Firebase console →
+# Authentication → Users → Add user (the password never passes through GitHub).
+# This repository is public: the e-mail is masked in the logs.
+name: Set up admin
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: E-mail of the account to make Super Admin
+        type: string
+        required: true
+      name:
+        description: Full name (optional)
+        type: string
+        required: false
+      seed:
+        description: Also load starter data (districts and categories; existing entries are kept)
+        type: boolean
+        default: true
+      environment:
+        description: Target
+        type: choice
+        options: [production, dev]
+        default: production
+
+concurrency: setup-admin-${{ inputs.environment }}
+
+jobs:
+  admin:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Hide the e-mail in logs
+        env:
+          EMAIL: ${{ inputs.email }}
+        run: echo "::add-mask::$EMAIL"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Make the account Super Admin
+        env:
+          EMAIL: ${{ inputs.email }}
+          NAME: ${{ inputs.name }}
+          GCLOUD_PROJECT: ${{ vars.FIREBASE_PROJECT_ID }}
+        run: |
+          test -n "$GCLOUD_PROJECT" || { echo "FIREBASE_PROJECT_ID is not set for this environment"; exit 1; }
+          if [ -n "$NAME" ]; then
+            npm run set-role -w functions -- --email "$EMAIL" --role SUPER_ADMIN --name "$NAME"
+          else
+            npm run set-role -w functions -- --email "$EMAIL" --role SUPER_ADMIN
+          fi
+      - name: Load starter data
+        if: inputs.seed
+        env:
+          GCLOUD_PROJECT: ${{ vars.FIREBASE_PROJECT_ID }}
+        run: npm run seed -w functions

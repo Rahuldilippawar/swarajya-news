@@ -59,8 +59,10 @@ role it names. Rotate the key yearly.
 
 ## 4. First accounts and starter data (owner)
 
-1. Create the first Super Admin: [SETUP.md §2](SETUP.md#2-create-the-first-super-admin).
-2. Load categories and districts/talukas: [SETUP.md §3](SETUP.md#3-starter-data); then adjust them in the Admin Panel.
+1. Create the first Super Admin and load the starter data: add your account in Firebase console →
+   Authentication → Users → **Add user**, then GitHub → Actions → **Set up admin** with that e-mail
+   ([SETUP.md §2](SETUP.md#2-create-the-first-super-admin)).
+2. Adjust the categories and districts in the Admin Panel ([SETUP.md §3](SETUP.md#3-starter-data)).
 3. Admin Panel → **Settings**: channel name, tagline, phone, WhatsApp, e-mail, address (with the grievance
    officer), social links.
 4. Admin Panel → **Staff & Reporters**: create the Owner, editors, social media manager and reporters, with their

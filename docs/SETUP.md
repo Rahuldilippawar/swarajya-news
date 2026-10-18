@@ -37,6 +37,14 @@ Admin SDK, which needs a service-account key that only project owners can
 download.
 
 1. In the Firebase console, **Authentication → Users → Add user** with the admin's email and a strong password.
+
+**Without a computer:** once the deploy secrets are set up (LAUNCH.md §2), run GitHub → Actions →
+**Set up admin** → enter the e-mail (and optionally the name), keep *Also load starter data* ticked →
+Run workflow. It does steps 2–3 below and the starter data of §3, using the deploy service account; the
+e-mail is masked in the public logs.
+
+With a computer:
+
 2. **Project settings → Service accounts → Generate new private key.** Store the file outside the repository (it is in `.gitignore` as `service-account*.json`, but keep it elsewhere anyway) and delete it when you are done.
 3. Run:
 

@@ -24,7 +24,12 @@ async function main() {
     throw new Error(`Usage: --email <email> --role <${ROLES.join("|")}> [--name "Full Name"]`);
   }
 
-  let user = await auth.getUserByEmail(email);
+  let user = await auth.getUserByEmail(email).catch((err: { code?: string }) => {
+    if (err.code === "auth/user-not-found") {
+      throw new Error("No account with that e-mail. Create it first: Firebase console → Authentication → Users → Add user.");
+    }
+    throw err;
+  });
   if (name) user = await auth.updateUser(user.uid, { displayName: name });
   const { reporterId } = await applyRole(user, role, "cli:set-role");
 
