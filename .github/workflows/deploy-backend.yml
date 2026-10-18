@@ -53,7 +53,9 @@ jobs:
       - name: Deploy
         env:
           PROJECT: ${{ vars.FIREBASE_PROJECT_ID }}
-        run: npx firebase deploy --only firestore,storage,functions --project "$PROJECT" --non-interactive
+        # --force: set up the Artifact Registry cleanup policy (old build images are deleted instead of
+        # accumulating storage cost) and delete functions that were removed from the code, without prompting.
+        run: npx firebase deploy --only firestore,storage,functions --project "$PROJECT" --non-interactive --force
       - name: Smoke test
         env:
           PROJECT: ${{ vars.FIREBASE_PROJECT_ID }}
