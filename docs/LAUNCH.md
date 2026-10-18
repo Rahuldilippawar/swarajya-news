@@ -41,23 +41,28 @@ so every production deploy waits for approval.
 | Secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `ANDROID_PROD_CONFIG_JSON` | production only, see §8 |
 
 **Deploy service account**: Google Cloud console → IAM → Service accounts → create `github-deploy` with roles
-*Firebase Admin*, *Cloud Functions Admin*, *Service Account User* and *Secret Manager Viewer*; create a JSON key,
+*Firebase Admin*, *Cloud Functions Admin*, *Service Account User* and *Secret Manager Admin* (the deploy grants
+the functions read access to the WhatsApp secrets, which a viewer role cannot do); create a JSON key,
 paste it into the secret, then delete the downloaded file. If a deploy reports a missing permission, grant the
 role it names. Rotate the key yearly.
 
 ## 3. Backend deploy (owner) 🧪
 
-1. Set the WhatsApp secrets once (they can be placeholders until WhatsApp goes live, SETUP.md §8):
+1. Create the three WhatsApp secrets once; the functions cannot deploy without them. Until WhatsApp goes live
+   (SETUP.md §8) any placeholder value works, e.g. `not-set-yet`. Either with the CLI —
    `npx firebase functions:secrets:set WHATSAPP_ACCESS_TOKEN --project swarajya-news-prod` (and
-   `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`).
+   `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`) — or, without a computer, in Google Cloud console →
+   **Secret Manager** → **Create secret** with exactly those names.
 2. GitHub → Actions → **Deploy backend** → Run workflow → *production*. It runs typecheck and all tests, deploys
    Firestore rules and indexes, Storage rules and Cloud Functions, then smoke-tests the functions.
 3. Indexes take a few minutes to build after the first deploy (Firebase console → Firestore → Indexes).
 
 ## 4. First accounts and starter data (owner)
 
-1. Create the first Super Admin: [SETUP.md §2](SETUP.md#2-create-the-first-super-admin).
-2. Load categories and districts/talukas: [SETUP.md §3](SETUP.md#3-starter-data); then adjust them in the Admin Panel.
+1. Create the first Super Admin and load the starter data: add your account in Firebase console →
+   Authentication → Users → **Add user**, then GitHub → Actions → **Set up admin** with that e-mail
+   ([SETUP.md §2](SETUP.md#2-create-the-first-super-admin)).
+2. Adjust the categories and districts in the Admin Panel ([SETUP.md §3](SETUP.md#3-starter-data)).
 3. Admin Panel → **Settings**: channel name, tagline, phone, WhatsApp, e-mail, address (with the grievance
    officer), social links.
 4. Admin Panel → **Staff & Reporters**: create the Owner, editors, social media manager and reporters, with their
