@@ -255,15 +255,25 @@ export interface AuditLogDoc {
   relevantMetadata?: Record<string, unknown>;
 }
 
-export const SOCIAL_NETWORKS = ["youtube", "facebook", "instagram", "whatsapp", "x"] as const;
+export const SOCIAL_NETWORKS = ["youtube", "facebook", "instagram", "whatsapp", "telegram", "x"] as const;
 export type SocialNetwork = (typeof SOCIAL_NETWORKS)[number];
 
 /** appSettings/public — editable by the Super Admin in Admin → Settings, read by the website and app. */
 export interface AppSettingsDoc {
   channelName: string;
   tagline?: string;
-  contactDetails: { phone?: string; whatsapp?: string; email?: string; address?: string };
+  contactDetails: {
+    phone?: string;
+    whatsapp?: string;
+    email?: string;
+    address?: string;
+    /** Director / chief editor, shown on the Contact page (e.g. "श्री. योगेश भदाणे"). */
+    editorName?: string;
+    editorPhone?: string;
+  };
   socialLinks: Partial<Record<SocialNetwork, string>>;
+  /** Where to watch the channel on TV, e.g. "GTPL केबल नेटवर्क – चॅनल क्र. ९९३". Optional; the platform does not depend on it. */
+  tvChannel?: string;
   updatedAt?: TimestampLike;
   updatedBy?: string;
 }

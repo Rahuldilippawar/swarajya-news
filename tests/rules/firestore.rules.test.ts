@@ -298,6 +298,19 @@ describe("app settings", () => {
     await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "appSettings/other"), settings()));
     await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "appSettings/public"), settings({ hacked: true })));
   });
+
+  it("accepts the editor, Telegram and TV channel fields, validated", async () => {
+    const db = as("sa", "SUPER_ADMIN");
+    const full = settings({
+      contactDetails: { phone: "+91 86259 70948", editorName: "श्री. योगेश भदाणे", editorPhone: "+91 86259 70948" },
+      socialLinks: { telegram: "https://t.me/S_Nd24" },
+      tvChannel: "GTPL केबल नेटवर्क – चॅनल क्र. ९९३",
+    });
+    await assertSucceeds(setDoc(doc(db, "appSettings/public"), full));
+    await assertFails(setDoc(doc(db, "appSettings/public"), settings({ socialLinks: { telegram: "http://t.me/x" } })));
+    await assertFails(setDoc(doc(db, "appSettings/public"), settings({ tvChannel: 993 })));
+    await assertFails(setDoc(doc(db, "appSettings/public"), settings({ contactDetails: { managerName: "x" } })));
+  });
 });
 
 describe("suspended staff", () => {

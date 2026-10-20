@@ -10,7 +10,8 @@ const SOCIAL_LABELS: Record<SocialNetwork, string> = {
   facebook: "Facebook page",
   instagram: "Instagram",
   whatsapp: "WhatsApp channel / group link",
-  x: "X (Twitter)",
+  telegram: "Telegram channel",
+  x: "X (Twitter) profile",
 };
 
 const EMPTY: AppSettingsDoc = { channelName: "स्वराज्य न्यूज", contactDetails: {}, socialLinks: { youtube: "https://www.youtube.com/@swarajyanews2025" } };
@@ -40,6 +41,7 @@ export default function SettingsPage() {
       await setDoc(doc(getFirebase().db, COLLECTIONS.appSettings, APP_SETTINGS_DOC_ID), {
         channelName: form.channelName.trim(),
         ...(form.tagline?.trim() ? { tagline: form.tagline.trim() } : {}),
+        ...(form.tvChannel?.trim() ? { tvChannel: form.tvChannel.trim() } : {}),
         contactDetails: clean(form.contactDetails),
         socialLinks: clean(form.socialLinks),
         updatedBy: user.uid,
@@ -66,6 +68,7 @@ export default function SettingsPage() {
           <h2 style={{ margin: 0 }}>Channel</h2>
           <label>Channel name<input value={form.channelName} onChange={(e) => setForm({ ...form, channelName: e.target.value })} maxLength={60} required /></label>
           <label>Tagline <span className="panel-hint">optional</span><input value={form.tagline ?? ""} onChange={(e) => setForm({ ...form, tagline: e.target.value })} maxLength={120} /></label>
+          <label>Watch on TV <span className="panel-hint">optional, e.g. cable network and channel number</span><input value={form.tvChannel ?? ""} onChange={(e) => setForm({ ...form, tvChannel: e.target.value })} maxLength={120} /></label>
         </section>
         <section className="panel-card panel-section panel-form-stack">
           <h2 style={{ margin: 0 }}>Contact details <span className="panel-hint">shown on the website and app Contact page</span></h2>
@@ -75,6 +78,10 @@ export default function SettingsPage() {
             <label>Email<input type="email" value={form.contactDetails.email ?? ""} onChange={(e) => setContact("email", e.target.value)} maxLength={100} /></label>
           </div>
           <label>Address<textarea value={form.contactDetails.address ?? ""} onChange={(e) => setContact("address", e.target.value)} maxLength={300} style={{ minHeight: 60 }} /></label>
+          <div className="panel-form">
+            <label>Director / Chief Editor<input value={form.contactDetails.editorName ?? ""} onChange={(e) => setContact("editorName", e.target.value)} maxLength={80} /></label>
+            <label>Editor&apos;s phone<input value={form.contactDetails.editorPhone ?? ""} onChange={(e) => setContact("editorPhone", e.target.value)} inputMode="tel" maxLength={30} /></label>
+          </div>
         </section>
         <section className="panel-card panel-section panel-form-stack">
           <h2 style={{ margin: 0 }}>Social links</h2>

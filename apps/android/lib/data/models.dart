@@ -194,15 +194,18 @@ class AppAd {
 
 /// Channel details from Admin → Settings.
 class AppSettings {
-  const AppSettings({required this.channelName, this.tagline, this.contact = const {}, this.social = const {}});
+  const AppSettings({required this.channelName, this.tagline, this.tvChannel, this.contact = const {}, this.social = const {}});
 
   final String channelName;
   final String? tagline;
 
-  /// phone, whatsapp, email, address
+  /// Where to watch on TV, e.g. "GTPL केबल नेटवर्क – चॅनल क्र. ९९३".
+  final String? tvChannel;
+
+  /// phone, whatsapp, email, address, editorName, editorPhone
   final Map<String, String> contact;
 
-  /// youtube, facebook, instagram, whatsapp, x → https URL
+  /// youtube, facebook, instagram, whatsapp, telegram, x → https URL
   final Map<String, String> social;
 
   static const defaults = AppSettings(

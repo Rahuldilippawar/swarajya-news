@@ -192,16 +192,18 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isSuperAdmin() && isActiveStaff()
         && id == 'public'
-        && request.resource.data.keys().hasOnly(['channelName', 'tagline', 'contactDetails', 'socialLinks', 'updatedAt', 'updatedBy'])
+        && request.resource.data.keys().hasOnly(['channelName', 'tagline', 'contactDetails', 'socialLinks', 'tvChannel', 'updatedAt', 'updatedBy'])
+        && (!('tvChannel' in request.resource.data) || (request.resource.data.tvChannel is string && request.resource.data.tvChannel.size() <= 120))
         && request.resource.data.channelName is string && request.resource.data.channelName.size() > 0
         && request.resource.data.contactDetails is map
-        && request.resource.data.contactDetails.keys().hasOnly(['phone', 'whatsapp', 'email', 'address'])
+        && request.resource.data.contactDetails.keys().hasOnly(['phone', 'whatsapp', 'email', 'address', 'editorName', 'editorPhone'])
         && request.resource.data.socialLinks is map
-        && request.resource.data.socialLinks.keys().hasOnly(['youtube', 'facebook', 'instagram', 'whatsapp', 'x'])
+        && request.resource.data.socialLinks.keys().hasOnly(['youtube', 'facebook', 'instagram', 'whatsapp', 'telegram', 'x'])
         && optionalHttps(request.resource.data.socialLinks, 'youtube')
         && optionalHttps(request.resource.data.socialLinks, 'facebook')
         && optionalHttps(request.resource.data.socialLinks, 'instagram')
         && optionalHttps(request.resource.data.socialLinks, 'whatsapp')
+        && optionalHttps(request.resource.data.socialLinks, 'telegram')
         && optionalHttps(request.resource.data.socialLinks, 'x')
         && request.resource.data.updatedBy == request.auth.uid
         && request.resource.data.updatedAt == request.time;
