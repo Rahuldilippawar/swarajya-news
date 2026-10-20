@@ -14,3 +14,4 @@ export const CHANNEL = {
   nameMarathi: "स्वराज्य न्यूज",
   youtubeHandle: "@swarajyanews2025",
 } as const;
+export * from "./whatsappShare";

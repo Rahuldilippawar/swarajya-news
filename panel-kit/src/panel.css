@@ -110,6 +110,9 @@ h1 { margin-top: 0; }
 
 button.panel-secondary { background: transparent; color: var(--brand-blue); border: 1px solid var(--border); }
 button.panel-danger { background: var(--danger); }
+/* A link styled as a primary button (e.g. opening WhatsApp); WhatsApp green. */
+a.panel-button { display: inline-block; text-align: center; text-decoration: none; font-weight: 600; color: #fff; background: #128c4a; border-radius: 8px; padding: 10px 16px; }
+a.panel-button:hover { background: #0f7a40; }
 
 .panel-callout { border-left: 4px solid var(--brand-blue); background: #eef0ff; padding: 12px 16px; border-radius: 8px; }
 .panel-callout code { word-break: break-all; }

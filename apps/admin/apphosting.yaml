@@ -10,6 +10,10 @@ runConfig:
   memoryMiB: 512
 
 env:
+  - variable: NEXT_PUBLIC_SITE_URL
+    # The public website, for article links in the WhatsApp share message.
+    value: https://website--swarajya-news.asia-southeast1.hosted.app
+    availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyC4-D3TI2kPnpiXKx5ohuqKUnaBouc0uqk
     availability: [BUILD, RUNTIME]

@@ -44,6 +44,7 @@ import { LocationPicker } from "./LocationPicker";
 import { StatusActions } from "./StatusActions";
 import { StatusBadge } from "./StatusBadge";
 import { ThumbnailField } from "./ThumbnailField";
+import { WhatsAppShare } from "./WhatsAppShare";
 import { YouTubeField } from "./YouTubeField";
 
 interface FormState {
@@ -457,7 +458,10 @@ export function NewsForm({ newsId, news }: { newsId?: string; news: NewsDoc | nu
                   <a href={`/notifications?newsId=${newsId}`} className="panel-hint">Send a push notification →</a>
                 )}
                 {status === "PUBLISHED" && hasPermission(role, "whatsapp.send") && (
-                  <a href={`/whatsapp?newsId=${newsId}`} className="panel-hint">Send on WhatsApp →</a>
+                  <a href={`/whatsapp?newsId=${newsId}`} className="panel-hint">WhatsApp bulletin to subscribers →</a>
+                )}
+                {status === "PUBLISHED" && news && (hasPermission(role, "whatsapp.send") || hasPermission(role, "notifications.send")) && (
+                  <WhatsAppShare article={{ headline: news.headline, slug: news.slug, youtubeUrl: news.youtubeUrl }} />
                 )}
                 {!isEditor && status === "DRAFT" && (
                   <button type="button" className="panel-link" style={{ alignSelf: "flex-start" }} onClick={deleteDraft}>
