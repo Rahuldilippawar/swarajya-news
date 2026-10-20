@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
+/// The official Swarajya News logo (assets/logo.png, about 1.59:1, transparent corners).
 class BrandLogo extends StatelessWidget {
   const BrandLogo({super.key, this.height = 40});
 
@@ -8,6 +8,6 @@ class BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SvgPicture.asset('assets/logo.svg', height: height, semanticsLabel: 'Swarajya News');
+    return Image.asset('assets/logo.png', height: height, semanticLabel: 'Swarajya News', filterQuality: FilterQuality.medium);
   }
 }

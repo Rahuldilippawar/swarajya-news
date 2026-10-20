@@ -9,7 +9,7 @@ export async function SiteHeader() {
     <header className="site-header">
       <div className="bar container">
         <Link href="/" className="brand" aria-label={`${SITE.name} — मुख्यपृष्ठ`}>
-          <Image src="/logo.svg" alt="" width={96} height={54} priority />
+          <Image src="/logo.png" alt="" width={96} height={61} priority />
           <strong>{SITE.nameMarathi}</strong>
         </Link>
         <form action="/search" role="search" className="header-search">

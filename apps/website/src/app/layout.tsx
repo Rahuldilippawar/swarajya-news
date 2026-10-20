@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: { default: `${SITE.nameMarathi} | ${SITE.name}`, template: `%s | ${SITE.name}` },
   description: SITE.description,
   alternates: { canonical: "/" },
-  openGraph: { type: "website", siteName: SITE.name, locale: "mr_IN", images: ["/logo.svg"] },
+  openGraph: { type: "website", siteName: SITE.name, locale: "mr_IN", images: [{ url: "/og-image.jpg", width: 1200, height: 630 }] },
 };
 
 export const viewport: Viewport = {

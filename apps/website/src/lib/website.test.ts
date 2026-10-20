@@ -65,7 +65,7 @@ describe("sharing and structured data", () => {
   });
 
   it("emits NewsArticle JSON-LD", () => {
-    const ld = newsArticleJsonLd(article, { url: "https://x/news/a", image: "https://img", logoUrl: "https://x/logo.svg" });
+    const ld = newsArticleJsonLd(article, { url: "https://x/news/a", image: "https://img", logoUrl: "https://x/logo.png" });
     expect(ld).toMatchObject({ "@type": "NewsArticle", headline: "पुण्यात पाऊस", datePublished: article.publishedAt, inLanguage: "mr-IN" });
   });
 

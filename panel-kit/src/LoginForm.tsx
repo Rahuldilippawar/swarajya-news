@@ -74,7 +74,7 @@ export function LoginForm({ title, redirectTo = "/dashboard" }: { title: string;
 
   return (
     <form className="panel-card panel-login" onSubmit={onSubmit} noValidate>
-      <img src="/logo.svg" alt="Swarajya News" width={120} height={68} />
+      <img src="/logo.png" alt="Swarajya News" width={120} height={76} />
       <h1>{title}</h1>
       {status === "error" && <p className="panel-alert" role="alert">{configError}</p>}
       <label>
