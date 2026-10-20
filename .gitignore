@@ -29,3 +29,7 @@ emulator-data/
 .DS_Store
 .idea/
 .vscode/
+
+# Firebase App Hosting adapter output (local test builds)
+.apphosting/
+.turbo/

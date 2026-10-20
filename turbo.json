@@ -1,0 +1,12 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "agentGuidance": false,
+  "globalPassThroughEnv": ["NEXT_PRIVATE_*", "NEXT_TELEMETRY_DISABLED", "FIREBASE_*", "GOOGLE_*", "MONOREPO_*"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "env": ["NEXT_PUBLIC_*"],
+      "outputs": [".next/**", "!.next/cache/**", "lib/**"]
+    }
+  }
+}

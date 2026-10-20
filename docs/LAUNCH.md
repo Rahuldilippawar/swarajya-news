@@ -75,13 +75,25 @@ the `NEXT_PUBLIC_FIREBASE_*` values from the production Web app, `NEXT_PUBLIC_US
 Website also: `NEXT_PUBLIC_SITE_URL=https://swarajyanews.in`. Panels also (when App Check is set up):
 `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY`.
 
-**Vercel** (simplest for this repository layout): import the repository three times, setting *Root Directory* to
-`apps/website`, `apps/admin` and `apps/reporter`; framework Next.js; function region Mumbai (`bom1`). A news site
-with ads is commercial use, which needs the Pro plan.
+**Firebase App Hosting** (used for production): the repository is a Turborepo (`turbo.json` at the root), which
+App Hosting builds natively. Each app has an `apphosting.yaml` with its public web config and scale settings
+(`minInstances: 0`, so an idle site costs nothing). In Firebase console → **App Hosting** → **Create backend**,
+three times:
 
-**Firebase App Hosting** (keeps everything in the Google project): create one backend per app with its *root
-directory* set the same way and the environment variables above. Try it on the dev project first: if the build
-cannot resolve the shared packages (`@swarajya/shared`, `@swarajya/panel-kit`), use Vercel.
+| Backend ID | Root directory | Live branch |
+| --- | --- | --- |
+| `website` | `apps/website` | `main` |
+| `admin` | `apps/admin` | `main` |
+| `reporter` | `apps/reporter` | `main` |
+
+Region `asia-southeast1` (Singapore; App Hosting has no Mumbai region), connect the GitHub repository (first time
+only), automatic rollouts on, and link the existing web app. Every merge to `main` then redeploys all three. The
+site addresses are `https://<backend>--<project>.asia-southeast1.hosted.app`; the website's `NEXT_PUBLIC_SITE_URL`
+in `apps/website/apphosting.yaml` must match its address (change it when a custom domain is connected).
+
+**Vercel** (alternative): import the repository three times with the same root directories; framework Next.js;
+function region Mumbai (`bom1`); set the variables from `apphosting.yaml` in the project settings. A news site with
+ads is commercial use, which needs the Pro plan.
 
 Then: add each domain at the host and in your DNS; add the panel domains to Firebase **Authentication → Settings →
 Authorized domains**; remove `localhost` there in production.

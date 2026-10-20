@@ -1,0 +1,33 @@
+# Firebase App Hosting settings for the admin backend (root directory: apps/admin).
+# The NEXT_PUBLIC_* values are the public Firebase web config (not secrets); they
+# are needed at build time because Next.js inlines them into the browser code.
+runConfig:
+  # Scale to zero when idle so an unused site costs nothing; raise maxInstances if traffic grows.
+  minInstances: 0
+  maxInstances: 2
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyC4-D3TI2kPnpiXKx5ohuqKUnaBouc0uqk
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: swarajya-news.firebaseapp.com
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: swarajya-news
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: swarajya-news.firebasestorage.app
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "151758899815"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:151758899815:web:d63364cc5b13d8dc64a2c2"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_USE_FIREBASE_EMULATORS
+    value: "false"
+    availability: [BUILD, RUNTIME]
