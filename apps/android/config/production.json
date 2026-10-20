@@ -1,0 +1,9 @@
+{
+  "FIREBASE_API_KEY": "AIzaSyA2D8NROqGwXoG23_OBVCKjgpQU0rOQo5M",
+  "FIREBASE_ANDROID_APP_ID": "1:151758899815:android:e9065bb15fd9004b64a2c2",
+  "FIREBASE_PROJECT_ID": "swarajya-news",
+  "FIREBASE_MESSAGING_SENDER_ID": "151758899815",
+  "FIREBASE_STORAGE_BUCKET": "swarajya-news.firebasestorage.app",
+  "SITE_URL": "https://website--swarajya-news.asia-southeast1.hosted.app",
+  "FIRESTORE_EMULATOR_HOST": ""
+}

@@ -1,0 +1,71 @@
+# Builds an installable Android APK with the production settings
+# (apps/android/config/production.json) and publishes it as a GitHub Release, so
+# it can be downloaded and installed on a phone directly. Run it by hand from
+# the Actions tab.
+#
+# Signing: with the production upload-key secrets (ANDROID_KEYSTORE_BASE64 etc.,
+# see docs/LAUNCH.md §8) the APK is signed with that key; without them it is
+# signed with a temporary debug key. Debug-signed builds are fine for testing on
+# phones, but Google Play needs the "Release Android" App Bundle, and an app
+# installed from a debug-signed APK must be uninstalled before installing a
+# differently signed one.
+name: Android APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: apps/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.7"
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Use the upload key if it is configured
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+            printf 'storeFile=../upload-keystore.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+              "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > android/key.properties
+            echo "SIGNING=upload key" >> "$GITHUB_ENV"
+          else
+            echo "SIGNING=debug key (testing only)" >> "$GITHUB_ENV"
+          fi
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build apk --release --dart-define-from-file=config/production.json
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/upload-keystore.jks android/key.properties
+      - name: Publish as a GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # "1.0.0+1" → "1.0.0" (a "+" in a download name breaks some phone browsers)
+          VERSION=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+          TAG="android-v${VERSION}-${GITHUB_RUN_NUMBER}"
+          cp build/app/outputs/flutter-apk/app-release.apk "swarajya-news-${VERSION}.apk"
+          gh release create "$TAG" "swarajya-news-${VERSION}.apk" --prerelease \
+            --title "Swarajya News Android ${VERSION} (build ${GITHUB_RUN_NUMBER})" \
+            --notes "Installable APK with the production settings. Signed with: ${SIGNING}. Download the .apk on the phone, open it and allow installing from this source."
+          echo "Download: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/${TAG}/swarajya-news-${VERSION}.apk" | tee -a "$GITHUB_STEP_SUMMARY"
