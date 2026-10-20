@@ -77,8 +77,12 @@ Website also: `NEXT_PUBLIC_SITE_URL=https://swarajyanews.in`. Panels also (when 
 
 **Firebase App Hosting** (used for production): the repository is a Turborepo (`turbo.json` at the root), which
 App Hosting builds natively. Each app has an `apphosting.yaml` with its public web config and scale settings
-(`minInstances: 0`, so an idle site costs nothing). In Firebase console → **App Hosting** → **Create backend**,
-three times:
+(`minInstances: 0`, so an idle site costs nothing). The **Deploy websites** workflow creates the three backends
+the first time and redeploys them on every push to `main` that touches web code (or by hand from the Actions tab).
+One-time owner setup for it: enable the *Firebase App Hosting*, *Developer Connect*, *IAM* and *Cloud Resource
+Manager* APIs, and give the deploy service account the *Firebase App Hosting Admin* and *Storage Admin* roles, plus
+*Service Account Admin* and *Project IAM Admin* until the backends exist (creating the first backend sets up App
+Hosting's own service account; remove those two roles afterwards). The backends it creates:
 
 | Backend ID | Root directory | Live branch |
 | --- | --- | --- |
@@ -86,8 +90,9 @@ three times:
 | `admin` | `apps/admin` | `main` |
 | `reporter` | `apps/reporter` | `main` |
 
-Region `asia-southeast1` (Singapore; App Hosting has no Mumbai region), connect the GitHub repository (first time
-only), automatic rollouts on, and link the existing web app. Every merge to `main` then redeploys all three. The
+Region `asia-southeast1` (Singapore; App Hosting has no Mumbai region), linked to the existing web app. (Creating
+them in the console with a GitHub connection also works; then set `alwaysDeployFromSource` to `false` in
+`firebase.json` so the workflow does not compete with console rollouts.) The
 site addresses are `https://<backend>--<project>.asia-southeast1.hosted.app`; the website's `NEXT_PUBLIC_SITE_URL`
 in `apps/website/apphosting.yaml` must match its address (change it when a custom domain is connected).
 

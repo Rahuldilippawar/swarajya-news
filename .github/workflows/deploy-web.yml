@@ -1,0 +1,87 @@
+# Deploys the website, Admin Panel and Reporter Panel to Firebase App Hosting
+# (backends "website", "admin" and "reporter", configured in firebase.json and
+# apps/*/apphosting.yaml). Runs on every push to main that touches web code,
+# and by hand from the Actions tab. Creates a backend the first time it is
+# missing. Uses the "production" environment's FIREBASE_SERVICE_ACCOUNT and
+# FIREBASE_PROJECT_ID; the region can be overridden with the APPHOSTING_REGION
+# variable (App Hosting has no Mumbai region).
+name: Deploy websites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/website/**"
+      - "apps/admin/**"
+      - "apps/reporter/**"
+      - "shared/**"
+      - "panel-kit/**"
+      - "package-lock.json"
+      - "turbo.json"
+      - "firebase.json"
+      - ".github/workflows/deploy-web.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target
+        type: choice
+        options: [production, dev]
+        default: production
+      backends:
+        description: Which sites
+        type: choice
+        options: [all, website, admin, reporter]
+        default: all
+
+concurrency: deploy-web-${{ inputs.environment || 'production' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'production' }}
+    timeout-minutes: 60
+    env:
+      PROJECT: ${{ vars.FIREBASE_PROJECT_ID }}
+      REGION: ${{ vars.APPHOSTING_REGION || 'asia-southeast1' }}
+      BACKENDS: ${{ (inputs.backends == '' || inputs.backends == 'all' || inputs.backends == null) && 'website admin reporter' || inputs.backends }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Never deploy what does not lint and typecheck.
+      - run: npm run lint
+      - run: npm run typecheck
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Create missing backends
+        run: |
+          test -n "$PROJECT" || { echo "FIREBASE_PROJECT_ID is not set for this environment"; exit 1; }
+          # The web app every backend is linked to: the one whose config the apps are built with.
+          APP_ID=$(sed -n 's/^ *value: "\(1:[0-9]*:web:[0-9a-f]*\)".*/\1/p' apps/admin/apphosting.yaml | head -1)
+          test -n "$APP_ID" || { echo "Could not read the web app ID from apps/admin/apphosting.yaml"; exit 1; }
+          for b in $BACKENDS; do
+            if npx firebase apphosting:backends:get "$b" --project "$PROJECT" > /dev/null 2>&1; then
+              echo "Backend $b exists."
+            else
+              echo "Creating backend $b in $REGION..."
+              npx firebase apphosting:backends:create --non-interactive --project "$PROJECT" \
+                --backend "$b" --primary-region "$REGION" --root-dir "apps/$b" --app "$APP_ID"
+            fi
+          done
+      - name: Deploy
+        run: |
+          ONLY=$(for b in $BACKENDS; do printf 'apphosting:%s,' "$b"; done | sed 's/,$//')
+          npx firebase deploy --only "$ONLY" --project "$PROJECT" --non-interactive --force
+      - name: Smoke test
+        run: |
+          ARGS=""
+          for b in $BACKENDS; do
+            URL="https://$b--$PROJECT.$REGION.hosted.app"
+            case $b in website) ARGS="$ARGS --site $URL";; *) ARGS="$ARGS --$b $URL";; esac
+            echo "$b: $URL"
+          done
+          node scripts/smoke.mjs $ARGS

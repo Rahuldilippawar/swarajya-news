@@ -11,16 +11,85 @@
       "source": "functions",
       "codebase": "default",
       "runtime": "nodejs22",
-      "ignore": ["node_modules", "src", ".env.example", "*.log", "tsconfig.json"],
-      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+      "ignore": [
+        "node_modules",
+        "src",
+        ".env.example",
+        "*.log",
+        "tsconfig.json"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
     }
   ],
   "emulators": {
-    "auth": { "port": 9099 },
-    "firestore": { "port": 8080 },
-    "functions": { "port": 5001 },
-    "storage": { "port": 9199 },
-    "ui": { "enabled": true, "port": 4000 },
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "functions": {
+      "port": 5001
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
     "singleProjectMode": true
-  }
+  },
+  "apphosting": [
+    {
+      "backendId": "website",
+      "rootDir": "apps/website",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "**/.next",
+        "**/.turbo",
+        "apps/android",
+        "functions/lib",
+        "firebase-debug.log",
+        "*.log",
+        ".apphosting"
+      ],
+      "alwaysDeployFromSource": true
+    },
+    {
+      "backendId": "admin",
+      "rootDir": "apps/admin",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "**/.next",
+        "**/.turbo",
+        "apps/android",
+        "functions/lib",
+        "firebase-debug.log",
+        "*.log",
+        ".apphosting"
+      ],
+      "alwaysDeployFromSource": true
+    },
+    {
+      "backendId": "reporter",
+      "rootDir": "apps/reporter",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "**/.next",
+        "**/.turbo",
+        "apps/android",
+        "functions/lib",
+        "firebase-debug.log",
+        "*.log",
+        ".apphosting"
+      ],
+      "alwaysDeployFromSource": true
+    }
+  ]
 }
