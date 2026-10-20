@@ -15,3 +15,4 @@ export const CHANNEL = {
   youtubeHandle: "@swarajyanews2025",
 } as const;
 export * from "./whatsappShare";
+export * from "./idCard";

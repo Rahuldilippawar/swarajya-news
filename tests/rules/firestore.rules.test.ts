@@ -313,6 +313,15 @@ describe("app settings", () => {
   });
 });
 
+describe("ID card verification records", () => {
+  it("can be read one at a time by anyone but never listed or written by clients", async () => {
+    await seed("idCards/abcDEF1234567890ghij", { cardId: "abcDEF1234567890ghij", fullName: "X", status: "ACTIVE" });
+    await assertSucceeds(getDoc(doc(anon(), "idCards/abcDEF1234567890ghij")));
+    await assertFails(getDocs(collection(anon(), "idCards")));
+    await assertFails(setDoc(doc(as("sa", "SUPER_ADMIN"), "idCards/forged"), { cardId: "forged", status: "ACTIVE" }));
+  });
+});
+
 describe("suspended staff", () => {
   it("cannot write even while their old token still carries a role", async () => {
     await seed("news/d", draft("d", "rep1"));

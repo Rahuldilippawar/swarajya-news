@@ -276,6 +276,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Press-card verification (the QR code): public, minimal, written only by Cloud Functions.
+    match /idCards/{cardId} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
     match /auditLogs/{id} {
       allow read: if isSuperAdmin() && isActiveStaff();
       allow write: if false;

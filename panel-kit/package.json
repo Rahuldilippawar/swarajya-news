@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@swarajya/shared": "*"
+    "@swarajya/shared": "*",
+    "qrcode": "1.5.4"
   },
   "peerDependencies": {
     "firebase": "^11.10.0",
@@ -22,6 +23,7 @@
     "react": "^19.1.0"
   },
   "devDependencies": {
+    "@types/qrcode": "1.5.5",
     "@types/react": "19.1.17",
     "@types/react-dom": "19.1.11",
     "firebase": "11.10.0",
