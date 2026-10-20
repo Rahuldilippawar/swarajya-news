@@ -1,7 +1,7 @@
 {
   "name": "swarajya-news",
   "private": true,
-  "description": "Swarajya News \u2014 independent digital news platform (website, Android app, Admin and Reporter panels on one Firebase backend).",
+  "description": "Swarajya News — independent digital news platform (website, Android app, Admin and Reporter panels on one Firebase backend).",
   "workspaces": [
     "shared",
     "panel-kit",
@@ -28,11 +28,13 @@
   },
   "devDependencies": {
     "firebase-tools": "14.27.0",
-    "postcss": "8.5.30"
+    "postcss": "8.5.30",
+    "turbo": "2.11.7"
   },
   "overrides": {
     "postcss": "$postcss",
     "@grpc/grpc-js": "1.14.6",
     "uuid": "11.1.1"
-  }
+  },
+  "packageManager": "npm@10.9.4"
 }
