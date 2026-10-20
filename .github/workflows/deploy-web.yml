@@ -76,10 +76,14 @@ jobs:
       - name: Deploy
         run: |
           set -o pipefail
-          ONLY=$(for b in $BACKENDS; do printf 'apphosting:%s,' "$b"; done | sed 's/,$//')
-          npx firebase deploy --only "$ONLY" --project "$PROJECT" --non-interactive --force | tee deploy.log
-          # --force skips missing backends with only a warning; treat that as a failure.
-          if grep -q "Skipping deployment" deploy.log; then echo "Some backends were not deployed"; exit 1; fi
+          # One backend at a time: parallel first builds failed intermittently, single builds did not.
+          FAILED=""
+          for b in $BACKENDS; do
+            npx firebase deploy --only "apphosting:$b" --project "$PROJECT" --non-interactive --force | tee "deploy-$b.log"
+            # The CLI reports a failed rollout or a skipped backend as a warning and still exits 0.
+            if grep -qE "Rollout for backend $b failed|Skipping deployment" "deploy-$b.log"; then FAILED="$FAILED $b"; fi
+          done
+          if [ -n "$FAILED" ]; then echo "Not deployed:$FAILED"; exit 1; fi
       - name: Smoke test
         run: |
           ARGS=""
