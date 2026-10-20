@@ -64,7 +64,8 @@ jobs:
           APP_ID=$(sed -n 's/^ *value: "\(1:[0-9]*:web:[0-9a-f]*\)".*/\1/p' apps/admin/apphosting.yaml | head -1)
           test -n "$APP_ID" || { echo "Could not read the web app ID from apps/admin/apphosting.yaml"; exit 1; }
           for b in $BACKENDS; do
-            if npx firebase apphosting:backends:get "$b" --project "$PROJECT" > /dev/null 2>&1; then
+            # "backends:get" exits 0 even when nothing is found, so look for the backend's full name in its JSON.
+            if npx firebase apphosting:backends:get "$b" --project "$PROJECT" --json | grep -q "/backends/$b\""; then
               echo "Backend $b exists."
             else
               echo "Creating backend $b in $REGION..."
@@ -74,8 +75,15 @@ jobs:
           done
       - name: Deploy
         run: |
-          ONLY=$(for b in $BACKENDS; do printf 'apphosting:%s,' "$b"; done | sed 's/,$//')
-          npx firebase deploy --only "$ONLY" --project "$PROJECT" --non-interactive --force
+          set -o pipefail
+          # One backend at a time: parallel first builds failed intermittently, single builds did not.
+          FAILED=""
+          for b in $BACKENDS; do
+            npx firebase deploy --only "apphosting:$b" --project "$PROJECT" --non-interactive --force | tee "deploy-$b.log"
+            # The CLI reports a failed rollout or a skipped backend as a warning and still exits 0.
+            if grep -qE "Rollout for backend $b failed|Skipping deployment" "deploy-$b.log"; then FAILED="$FAILED $b"; fi
+          done
+          if [ -n "$FAILED" ]; then echo "Not deployed:$FAILED"; exit 1; fi
       - name: Smoke test
         run: |
           ARGS=""

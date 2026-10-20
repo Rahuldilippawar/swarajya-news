@@ -47,3 +47,5 @@ app.*.map.json
 # Per-environment build configuration (copy config/example.json)
 /config/*.json
 !/config/example.json
+# Production settings: public Firebase identifiers only (no secrets), used by the APK workflow.
+!/config/production.json
