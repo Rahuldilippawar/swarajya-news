@@ -7,7 +7,7 @@ import { cache } from "react";
 import { getDb } from "./firebase";
 import { SITE } from "./site";
 
-export type PublicSettings = Pick<AppSettingsDoc, "channelName" | "tagline" | "contactDetails" | "socialLinks">;
+export type PublicSettings = Pick<AppSettingsDoc, "channelName" | "tagline" | "contactDetails" | "socialLinks" | "tvChannel">;
 
 const DEFAULTS: PublicSettings = { channelName: SITE.nameMarathi, contactDetails: {}, socialLinks: { youtube: SITE.social.youtube } };
 
@@ -18,7 +18,7 @@ const fetchSettings = unstable_cache(
     const snap = await getDoc(doc(db, COLLECTIONS.appSettings, APP_SETTINGS_DOC_ID));
     if (!snap.exists()) return null;
     const s = snap.data() as AppSettingsDoc;
-    return { channelName: s.channelName, tagline: s.tagline, contactDetails: s.contactDetails ?? {}, socialLinks: s.socialLinks ?? {} };
+    return { channelName: s.channelName, tagline: s.tagline, contactDetails: s.contactDetails ?? {}, socialLinks: s.socialLinks ?? {}, tvChannel: s.tvChannel };
   },
   ["app-settings"],
   { revalidate: 300, tags: ["settings"] },

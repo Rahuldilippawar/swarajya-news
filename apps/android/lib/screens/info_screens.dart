@@ -46,7 +46,14 @@ class ContactScreen extends StatefulWidget {
   State<ContactScreen> createState() => _ContactScreenState();
 }
 
-const _socialNames = {'youtube': 'YouTube', 'facebook': 'Facebook', 'instagram': 'Instagram', 'whatsapp': 'WhatsApp', 'x': 'X'};
+const _socialNames = {
+  'youtube': 'YouTube',
+  'facebook': 'Facebook',
+  'instagram': 'Instagram',
+  'whatsapp': 'WhatsApp',
+  'telegram': 'Telegram',
+  'x': 'X',
+};
 
 class _ContactScreenState extends State<ContactScreen> {
   Future<AppSettings>? _settings;
@@ -69,6 +76,13 @@ class _ContactScreenState extends State<ContactScreen> {
         final c = s.contact;
         String digits(String v) => v.replaceAll(RegExp(r'[^\d+]'), '');
         final tiles = <Widget>[
+          if (c['editorName'] != null)
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: Text(c['editorName']!),
+              subtitle: Text(c['editorPhone'] != null ? 'संचालक / मुख्य संपादक · ${c['editorPhone']}' : 'संचालक / मुख्य संपादक'),
+              onTap: c['editorPhone'] == null ? null : () => _open('tel:${digits(c['editorPhone']!)}'),
+            ),
           if (c['phone'] != null)
             ListTile(leading: const Icon(Icons.call), title: Text(c['phone']!), onTap: () => _open('tel:${digits(c['phone']!)}')),
           if (c['whatsapp'] != null)
@@ -79,6 +93,7 @@ class _ContactScreenState extends State<ContactScreen> {
             ),
           if (c['email'] != null) ListTile(leading: const Icon(Icons.email), title: Text(c['email']!), onTap: () => _open('mailto:${c['email']}')),
           if (c['address'] != null) ListTile(leading: const Icon(Icons.place), title: Text(c['address']!)),
+          if (s.tvChannel != null) ListTile(leading: const Icon(Icons.tv), title: Text('टीव्हीवर पाहा: ${s.tvChannel}')),
           for (final e in s.social.entries)
             if (_socialNames.containsKey(e.key))
               ListTile(leading: const Icon(Icons.link), title: Text(_socialNames[e.key]!), onTap: () => _open(e.value)),

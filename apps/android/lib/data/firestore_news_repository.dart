@@ -159,6 +159,7 @@ class FirestoreNewsRepository implements NewsRepository {
         return AppSettings(
           channelName: s['channelName'] as String? ?? AppSettings.defaults.channelName,
           tagline: s['tagline'] as String?,
+          tvChannel: s['tvChannel'] as String?,
           contact: strings(s['contactDetails']),
           social: strings(s['socialLinks']),
         );

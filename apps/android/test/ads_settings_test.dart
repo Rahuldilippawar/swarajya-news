@@ -58,15 +58,33 @@ void main() {
     const settings = AppSettings(
       channelName: 'स्वराज्य न्यूज',
       tagline: 'सत्य, थेट तुमच्यापर्यंत',
-      contact: {'phone': '+91 98765 43210', 'email': 'news@example.com', 'address': 'शिवाजीनगर, पुणे'},
-      social: {'youtube': 'https://www.youtube.com/@swarajyanews2025', 'instagram': 'https://instagram.com/swarajya'},
+      tvChannel: 'GTPL चॅनल क्र. ९९३',
+      contact: {
+        'phone': '+91 98765 43210',
+        'email': 'news@example.com',
+        'address': 'शिवाजीनगर, पुणे',
+        'editorName': 'श्री. योगेश भदाणे',
+        'editorPhone': '8625970948',
+      },
+      social: {'youtube': 'https://www.youtube.com/@swarajyanews2025', 'instagram': 'https://instagram.com/swarajya', 'telegram': 'https://t.me/S_Nd24'},
     );
     await startApp(tester, FakeNewsRepository(stories, appSettings: settings));
     await tester.tap(find.byTooltip('Open navigation menu').evaluate().isNotEmpty ? find.byTooltip('Open navigation menu') : find.byIcon(Icons.menu));
     await tester.pumpAndSettle();
     await tester.tap(find.text('संपर्क'));
     await tester.pumpAndSettle();
-    for (final text in ['सत्य, थेट तुमच्यापर्यंत', '+91 98765 43210', 'news@example.com', 'शिवाजीनगर, पुणे', 'YouTube', 'Instagram']) {
+    for (final text in [
+      'सत्य, थेट तुमच्यापर्यंत',
+      '+91 98765 43210',
+      'news@example.com',
+      'शिवाजीनगर, पुणे',
+      'श्री. योगेश भदाणे',
+      'संचालक / मुख्य संपादक · 8625970948',
+      'टीव्हीवर पाहा: GTPL चॅनल क्र. ९९३',
+      'YouTube',
+      'Instagram',
+      'Telegram',
+    ]) {
       expect(find.text(text), findsOneWidget, reason: text);
     }
   });

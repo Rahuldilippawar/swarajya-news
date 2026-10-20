@@ -9,7 +9,7 @@
  * Against the emulators, set FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 and GCLOUD_PROJECT instead.
  */
 import { FieldValue } from "firebase-admin/firestore";
-import { COLLECTIONS, taxonomySlug } from "@swarajya/shared";
+import { APP_SETTINGS_DOC_ID, COLLECTIONS, taxonomySlug, type AppSettingsDoc } from "@swarajya/shared";
 import { db } from "../admin";
 
 const STATE = { id: "mh", name: "महाराष्ट्र", nameEn: "Maharashtra" };
@@ -66,6 +66,20 @@ const CATEGORIES: [string, string][] = [
   ["मनोरंजन", "Entertainment"],
 ];
 
+// The channel's own details, used until the Super Admin edits them in Admin → Settings.
+const SETTINGS: AppSettingsDoc = {
+  channelName: "स्वराज्य न्यूज",
+  tvChannel: "GTPL केबल नेटवर्क – चॅनल क्र. ९९३",
+  contactDetails: { editorName: "श्री. योगेश भदाणे", editorPhone: "8625970948" },
+  socialLinks: {
+    youtube: "https://www.youtube.com/@swarajyanews2025",
+    whatsapp: "https://whatsapp.com/channel/0029VbBSRfO3mFXxjIBshv3Q",
+    telegram: "https://t.me/S_Nd24",
+    facebook: "https://www.facebook.com/profile.php?id=61577638187332",
+    instagram: "https://www.instagram.com/swarajyanews2025",
+  },
+};
+
 async function createIfMissing(collection: string, id: string, data: Record<string, unknown>): Promise<boolean> {
   try {
     await db.collection(collection).doc(id).create({
@@ -98,6 +112,18 @@ async function main() {
     const slug = taxonomySlug(name, nameEn);
     const data = { categoryId: slug, slug, name, nameEn, isActive: true, displayOrder: (i + 1) * 10 };
     if (await createIfMissing(COLLECTIONS.categories, slug, data)) created++;
+  }
+
+  // Settings keep exactly the fields the Security Rules allow (no createdAt).
+  try {
+    await db.collection(COLLECTIONS.appSettings).doc(APP_SETTINGS_DOC_ID).create({
+      ...SETTINGS,
+      updatedBy: "seed",
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    created++;
+  } catch (err) {
+    if ((err as { code?: number }).code !== 6) throw err; // ALREADY_EXISTS: keep what the Super Admin saved
   }
 
   console.log(`Seed complete: ${created} documents created (existing documents were left unchanged).`);

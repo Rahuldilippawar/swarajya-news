@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getSettings } from "@/lib/settings";
 import { SITE } from "@/lib/site";
 
-const SOCIAL_NAMES = { youtube: "YouTube", facebook: "Facebook", instagram: "Instagram", whatsapp: "WhatsApp", x: "X" } as const;
+export const SOCIAL_NAMES = { youtube: "YouTube", facebook: "Facebook", instagram: "Instagram", whatsapp: "WhatsApp", telegram: "Telegram", x: "X" } as const;
 
 export async function SiteFooter() {
   const settings = await getSettings();
@@ -14,6 +14,7 @@ export async function SiteFooter() {
           <div>
             <h3>{settings.channelName}</h3>
             <p>{settings.tagline ?? SITE.description}</p>
+            {settings.tvChannel && <p>टीव्हीवर पाहा: {settings.tvChannel}</p>}
           </div>
           <div>
             <h3>माहिती</h3>
