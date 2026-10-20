@@ -12,6 +12,7 @@ import {
   type Role,
 } from "@swarajya/shared";
 import { auth, db, writeAuditLog } from "./admin";
+import { syncIdCard } from "./idCards";
 import {
   asPayload,
   optionalIdList,
@@ -102,6 +103,7 @@ export async function applyRole(user: UserRecord, role: Role, actorId: string): 
     },
     { merge: true },
   );
+  await syncIdCard(user.uid);
   await writeAuditLog({
     actorId,
     action: "USER_ROLE_SET",
@@ -193,6 +195,8 @@ export async function setStaffStatus(caller: Caller, data: unknown): Promise<Cal
   await auth.updateUser(uid, { disabled: status === "SUSPENDED" });
   if (status === "SUSPENDED") await auth.revokeRefreshTokens(uid);
   await usersCol().doc(uid).set({ status, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  // The card's QR verification shows "not valid" as soon as someone is suspended.
+  await syncIdCard(uid);
   await writeAuditLog({
     actorId: caller.uid,
     action: status === "SUSPENDED" ? "USER_SUSPENDED" : "USER_REACTIVATED",
@@ -202,16 +206,40 @@ export async function setStaffStatus(caller: Caller, data: unknown): Promise<Cal
   return { uid, status };
 }
 
+/**
+ * A staff photo must be the person's own upload in our Storage bucket
+ * (staff-photos/{uid}/…), or the local emulator during development.
+ */
+export function isStaffPhotoUrl(url: string, uid: string): boolean {
+  const path = `/o/staff-photos%2F${encodeURIComponent(uid)}%2F`;
+  return (
+    /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[\w.-]+\/o\//.test(url) ||
+    /^http:\/\/(127\.0\.0\.1|localhost):9199\/v0\/b\/[\w.-]+\/o\//.test(url)
+  ) && url.includes(path) && !/\s/.test(url) && url.length <= 1000;
+}
+
 export async function updateStaffProfile(caller: Caller, data: unknown): Promise<CallableResponse<"updateStaffProfile">> {
-  requireManager(caller);
   const payload = asPayload(data) as Partial<CallableRequest<"updateStaffProfile">> & Record<string, unknown>;
   const uid = requireString(payload, "uid", { max: 128 });
   const fullName = optionalString(payload, "fullName", { max: 100 });
   const assignedLocations = optionalIdList(payload, "assignedLocations");
+  const photoUrl = payload.photoUrl === undefined ? undefined : String(payload.photoUrl);
+  const designation = payload.designation === undefined ? undefined : String(payload.designation).trim();
+  const renewCard = payload.renewCard === true;
+
+  // Staff may change only their own photo; everything else needs a manager.
+  const selfPhotoOnly = caller.uid === uid && fullName === undefined && assignedLocations === undefined && designation === undefined && !renewCard;
+  if (!selfPhotoOnly) requireManager(caller);
+  if (photoUrl !== undefined && photoUrl !== "" && !isStaffPhotoUrl(photoUrl, uid)) {
+    throw new HttpsError("invalid-argument", "The photo must be uploaded through the panel.");
+  }
+  if (designation !== undefined && designation.length > 60) {
+    throw new HttpsError("invalid-argument", "The designation can be at most 60 characters.");
+  }
 
   const user = await getAuthUser(uid);
   const current = roleOf(user);
-  if (current) requireCanManage(caller, current, "edit");
+  if (!selfPhotoOnly && current) requireCanManage(caller, current, "edit");
   if (assignedLocations) await assertActiveLocations(assignedLocations);
 
   if (fullName) await auth.updateUser(uid, { displayName: fullName });
@@ -221,16 +249,27 @@ export async function updateStaffProfile(caller: Caller, data: unknown): Promise
       {
         ...(fullName ? { fullName } : {}),
         ...(assignedLocations ? { assignedLocations } : {}),
+        ...(photoUrl !== undefined ? { photoUrl: photoUrl || FieldValue.delete() } : {}),
+        ...(designation !== undefined ? { designation: designation || FieldValue.delete() } : {}),
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true },
     );
+  await syncIdCard(uid, { renew: renewCard });
   await writeAuditLog({
     actorId: caller.uid,
     action: "USER_PROFILE_UPDATED",
     targetType: "user",
     targetId: uid,
-    relevantMetadata: { fields: [fullName && "fullName", assignedLocations && "assignedLocations"].filter(Boolean) },
+    relevantMetadata: {
+      fields: [
+        fullName && "fullName",
+        assignedLocations && "assignedLocations",
+        photoUrl !== undefined && "photoUrl",
+        designation !== undefined && "designation",
+        renewCard && "renewCard",
+      ].filter(Boolean),
+    },
   });
   return { uid };
 }

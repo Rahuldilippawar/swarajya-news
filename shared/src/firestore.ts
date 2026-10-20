@@ -17,6 +17,8 @@ export const COLLECTIONS = {
   advertisements: "advertisements",
   auditLogs: "auditLogs",
   appSettings: "appSettings",
+  /** Public press-card verification records (the ID card's QR code), written only by Cloud Functions. */
+  idCards: "idCards",
   // Server-only sequence counters (e.g. reporter IDs); no client access.
   counters: "counters",
 } as const;
@@ -54,7 +56,31 @@ export interface UserDoc {
   status: UserStatus;
   reporterId?: string;
   assignedLocations: string[];
+  /** Passport-style photo for the ID card (Firebase Storage, staff-photos/{uid}/…). */
+  photoUrl?: string;
+  /** Overrides the role's default designation on the ID card, e.g. "प्रतिनिधी, साक्री तालुका". */
+  designation?: string;
+  /** Unguessable ID of the staff member's public card record (idCards/{cardId}). */
+  cardId?: string;
   createdAt: TimestampLike;
+  updatedAt: TimestampLike;
+}
+
+/**
+ * idCards/{cardId}: what anyone scanning a press card's QR code may see.
+ * Deliberately minimal: no email, phone or uid.
+ */
+export interface IdCardDoc {
+  cardId: string;
+  fullName: string;
+  role: Role;
+  designation: string;
+  photoUrl: string | null;
+  /** Reporter ID (SN-R-0001) or another staff number printed on the card. */
+  cardNumber: string;
+  status: UserStatus;
+  issuedAt: TimestampLike;
+  validUntil: TimestampLike;
   updatedAt: TimestampLike;
 }
 

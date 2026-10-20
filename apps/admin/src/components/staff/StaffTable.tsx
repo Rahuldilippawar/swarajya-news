@@ -2,6 +2,7 @@
 
 import { callFunction, errorMessage, useLocationsOfType } from "@swarajya/panel-kit";
 import { canManageRole, ROLE_LABELS, ROLES, type Role } from "@swarajya/shared";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AssignLocations } from "./AssignLocations";
 import type { StaffRow } from "./useStaff";
@@ -105,7 +106,8 @@ export function StaffTable({ rows, actorUid, actorRole }: { rows: StaffRow[]; ac
                   <td>
                     <span className="panel-badge" data-tone={suspended ? "danger" : "ok"}>{suspended ? "Suspended" : "Active"}</span>
                   </td>
-                  <td>
+                  <td className="panel-row">
+                    <Link href={`/reporters/${row.uid}/id-card`}>ID card</Link>
                     {editable && (
                       <button
                         type="button"

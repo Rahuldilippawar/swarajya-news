@@ -18,6 +18,17 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
+    // ID-card photos: uploaded by the staff member themselves or a manager; public
+    // because the card's QR verification page shows them.
+    match /staff-photos/{uid}/{fileName} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && (request.auth.uid == uid || request.auth.token.get('role', '') in ['SUPER_ADMIN', 'OWNER'])
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow update, delete: if false;
+    }
+
     match /ads/{fileName} {
       allow read: if true;
       allow write: if request.auth != null

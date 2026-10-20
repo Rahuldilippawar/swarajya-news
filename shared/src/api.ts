@@ -21,7 +21,11 @@ export interface CallableApi {
     response: { uid: string; status: UserStatus };
   };
   updateStaffProfile: {
-    request: { uid: string; fullName?: string; assignedLocations?: string[] };
+    /**
+     * Managers may change any field; staff may set only their own photoUrl.
+     * renewCard extends the ID card's validity by a year from today.
+     */
+    request: { uid: string; fullName?: string; assignedLocations?: string[]; photoUrl?: string; designation?: string; renewCard?: boolean };
     response: { uid: string };
   };
   transitionNews: {

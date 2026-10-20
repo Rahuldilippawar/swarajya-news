@@ -2,7 +2,9 @@
  * Seeds starter data: Maharashtra, its 36 districts and default news
  * categories. Safe to run repeatedly — existing documents are left untouched,
  * so names edited in the Admin Panel are never overwritten. Talukas and
- * villages are added from the Admin Panel as reporters need them.
+ * villages are added from the Admin Panel as reporters need them. Settings
+ * fields that are still empty are filled in, and every staff member without a
+ * press card gets one.
  *
  *   GOOGLE_APPLICATION_CREDENTIALS=./service-account.json npm run seed -w functions
  *
@@ -11,6 +13,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { APP_SETTINGS_DOC_ID, COLLECTIONS, taxonomySlug, type AppSettingsDoc } from "@swarajya/shared";
 import { db } from "../admin";
+import { syncIdCard } from "../idCards";
 
 const STATE = { id: "mh", name: "महाराष्ट्र", nameEn: "Maharashtra" };
 
@@ -69,8 +72,15 @@ const CATEGORIES: [string, string][] = [
 // The channel's own details, used until the Super Admin edits them in Admin → Settings.
 const SETTINGS: AppSettingsDoc = {
   channelName: "स्वराज्य न्यूज",
+  tagline: "सत्य हेच तुमच्या समोर !",
   tvChannel: "GTPL केबल नेटवर्क – चॅनल क्र. ९९३",
-  contactDetails: { editorName: "श्री. योगेश भदाणे", editorPhone: "8625970948" },
+  contactDetails: {
+    editorName: "श्री. योगेश भदाणे",
+    editorPhone: "8625970948",
+    phone: "+91 9096970948 / +91 8625970948",
+    email: "swarajnews513@gmail.com",
+    address: "प्लॉट नं. १२६, आई बंगला, कीर्ती क्लासेस जवळ, दत्तमंदिर, देवपूर, धुळे - ४२४००२ (महाराष्ट्र)",
+  },
   socialLinks: {
     youtube: "https://www.youtube.com/@swarajyanews2025",
     whatsapp: "https://whatsapp.com/channel/0029VbBSRfO3mFXxjIBshv3Q",
@@ -123,8 +133,29 @@ async function main() {
     });
     created++;
   } catch (err) {
-    if ((err as { code?: number }).code !== 6) throw err; // ALREADY_EXISTS: keep what the Super Admin saved
+    if ((err as { code?: number }).code !== 6) throw err;
+    // ALREADY_EXISTS: keep what the Super Admin saved, only fill in fields that are still empty.
+    const ref = db.collection(COLLECTIONS.appSettings).doc(APP_SETTINGS_DOC_ID);
+    const current = (await ref.get()).data() as Partial<AppSettingsDoc>;
+    const missing: Record<string, unknown> = {};
+    if (!current.tagline) missing.tagline = SETTINGS.tagline;
+    if (!current.tvChannel) missing.tvChannel = SETTINGS.tvChannel;
+    for (const [key, value] of Object.entries(SETTINGS.contactDetails)) {
+      if (!current.contactDetails?.[key as keyof AppSettingsDoc["contactDetails"]]) missing[`contactDetails.${key}`] = value;
+    }
+    if (Object.keys(missing).length > 0) {
+      await ref.update({ ...missing, updatedBy: "seed", updatedAt: FieldValue.serverTimestamp() });
+      console.log(`Settings: filled in ${Object.keys(missing).join(", ")}.`);
+    }
   }
+
+  // Press cards for staff added before ID cards existed (no-op for everyone else).
+  let cards = 0;
+  for (const user of (await db.collection(COLLECTIONS.users).get()).docs) {
+    if (user.get("cardId")) continue;
+    if (await syncIdCard(user.id)) cards++;
+  }
+  if (cards > 0) console.log(`ID cards: generated ${cards}.`);
 
   console.log(`Seed complete: ${created} documents created (existing documents were left unchanged).`);
 }

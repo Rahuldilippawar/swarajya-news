@@ -139,3 +139,59 @@ describe("updateStaffProfile", () => {
     expect((await db.collection("users").doc(uid).get()).get("fullName")).toBe("Ramesh B. Patil");
   });
 });
+
+describe("ID cards", () => {
+  const card = async (uid: string) => {
+    const cardId = (await db.collection("users").doc(uid).get()).get("cardId") as string;
+    return { cardId, data: (await db.collection("idCards").doc(cardId).get()).data()! };
+  };
+
+  it("issues a card on creation with the district designation, a year's validity and no private data", async () => {
+    await db.collection("locations").doc("district-dhule").set({ locationId: "district-dhule", name: "धुळे", type: "DISTRICT", isActive: true, parentLocationId: "mh" });
+    const res = await createStaffUser(owner, { email: "rep@example.com", fullName: "भिमराव सैंदाणे", role: "REPORTER", assignedLocations: ["district-dhule"] });
+    const { cardId, data } = await card(res.uid);
+
+    expect(cardId).toMatch(/^[A-Za-z0-9]{20}$/);
+    expect(data).toMatchObject({ fullName: "भिमराव सैंदाणे", designation: "प्रतिनिधी धुळे जिल्हा", cardNumber: "SN-R-0001", status: "ACTIVE", photoUrl: null });
+    const days = (data.validUntil.toMillis() - data.issuedAt.toMillis()) / 86_400_000;
+    expect(Math.round(days)).toBe(365);
+    expect(Object.keys(data)).not.toContain("email");
+    expect(Object.keys(data)).not.toContain("uid");
+  });
+
+  it("shows a suspension on the card, and keeps the same card ID", async () => {
+    const res = await newReporter();
+    const before = await card(res.uid);
+    await setStaffStatus(owner, { uid: res.uid, status: "SUSPENDED" });
+    const after = await card(res.uid);
+    expect(after.cardId).toBe(before.cardId);
+    expect(after.data.status).toBe("SUSPENDED");
+  });
+
+  it("lets staff set only their own photo, from our Storage path", async () => {
+    const res = await newReporter();
+    const me: Caller = { uid: res.uid, role: "REPORTER" };
+    const url = `https://firebasestorage.googleapis.com/v0/b/demo.appspot.com/o/staff-photos%2F${res.uid}%2Fphoto.jpg?alt=media`;
+    await updateStaffProfile(me, { uid: res.uid, photoUrl: url });
+    expect((await card(res.uid)).data.photoUrl).toBe(url);
+
+    await expectCode(updateStaffProfile(me, { uid: res.uid, photoUrl: "https://evil.example/x.jpg" }), "invalid-argument");
+    await expectCode(updateStaffProfile(me, { uid: res.uid, fullName: "New name" }), "permission-denied");
+    await expectCode(updateStaffProfile(me, { uid: "someone-else", photoUrl: url }), "permission-denied");
+    await expectCode(
+      updateStaffProfile(me, { uid: res.uid, photoUrl: url.replace(res.uid, "other") }),
+      "invalid-argument",
+    );
+  });
+
+  it("uses a custom designation and renews validity on request", async () => {
+    const res = await newReporter();
+    const first = (await card(res.uid)).data;
+    await updateStaffProfile(owner, { uid: res.uid, designation: "प्रतिनिधी, साक्री तालुका", renewCard: true });
+    const renewed = (await card(res.uid)).data;
+    expect(renewed.designation).toBe("प्रतिनिधी, साक्री तालुका");
+    expect(renewed.validUntil.toMillis()).toBeGreaterThanOrEqual(first.validUntil.toMillis());
+    await updateStaffProfile(owner, { uid: res.uid, designation: "" });
+    expect((await card(res.uid)).data.designation).toBe("प्रतिनिधी");
+  });
+});

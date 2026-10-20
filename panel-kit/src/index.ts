@@ -9,3 +9,5 @@ export { NewsForm } from "./news/NewsForm";
 export { StatusBadge } from "./news/StatusBadge";
 export { selectable, useCategories, useChildLocations, useLocationsOfType } from "./taxonomy";
 export { formatDateTime, timeAgo } from "./time";
+export { IdCard, type CardSettings } from "./idcard/IdCard";
+export { IdCardPage } from "./idcard/IdCardPage";

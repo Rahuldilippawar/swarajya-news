@@ -7,5 +7,6 @@ export const NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/news", label: "My News" },
   { href: "/news/create", label: "Submit news" },
+  { href: "/id-card", label: "ID card" },
   { href: "/profile", label: "Profile" },
 ];
