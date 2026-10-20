@@ -27,7 +27,7 @@ export function PanelShell({ title, nav, children }: { title: string; nav: reado
     <div className="panel-shell">
       <aside className="panel-sidebar">
         <div className="panel-brand">
-          <img src="/logo.svg" alt="" width={56} height={32} />
+          <img src="/logo.png" alt="" width={56} height={35} />
           <span>{title}</span>
         </div>
         <nav>

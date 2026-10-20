@@ -157,7 +157,7 @@ function Compose({ districtName, districts }: { districtName: Map<string, string
           <p className="panel-field">Preview</p>
           <div className="notif-preview" aria-label="Notification preview">
             <div className="notif-head">
-              <img src="/logo.svg" alt="" width={20} height={12} /> Swarajya News · now
+              <img src="/logo.png" alt="" width={20} height={13} /> Swarajya News · now
             </div>
             <strong>{title || "Title"}</strong>
             <p>{body || "Message"}</p>

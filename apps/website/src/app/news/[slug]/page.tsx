@@ -77,7 +77,7 @@ export default async function ArticlePage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: jsonLdScript(newsArticleJsonLd(article, { url, image, category, logoUrl: absoluteUrl("/logo.svg") })),
+          __html: jsonLdScript(newsArticleJsonLd(article, { url, image, category, logoUrl: absoluteUrl("/logo.png") })),
         }}
       />
       <ViewCounter newsId={article.id} endpoint={origin ? `${origin}/recordView` : null} />
