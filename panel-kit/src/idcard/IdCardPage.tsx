@@ -2,37 +2,21 @@
 
 import { APP_SETTINGS_DOC_ID, COLLECTIONS, type AppSettingsDoc, type CallableRequest, type IdCardDoc, type UserDoc } from "@swarajya/shared";
 import { doc } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useEffect, useRef, useState } from "react";
 import { getFirebase } from "../firebase";
 import { callFunction, errorMessage } from "../functions";
 import { useLiveDoc } from "../useLiveQuery";
 import { IdCard } from "./IdCard";
+import { PHOTO_TYPES, uploadStaffPhoto } from "./staffPhoto";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-/** Shrinks a photo to at most 600 px on its long side as JPEG, so it stays well under the 2 MB upload limit. */
-async function resizePhoto(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 600 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not read the photo."))), "image/jpeg", 0.85),
-  );
-}
-
 /**
  * A staff member's press card with its controls: photo upload (the member
  * themselves, or a manager), and for managers the designation and renewal.
  * The card itself is created by the server whenever the account changes.
  */
 export function IdCardPage({ uid, canManage }: { uid: string; canManage: boolean }) {
-  const { db, storage } = getFirebase();
+  const { db } = getFirebase();
   const user = useLiveDoc<UserDoc>(() => doc(db, COLLECTIONS.users, uid), [uid]);
   const cardId = user.data?.cardId;
   const card = useLiveDoc<IdCardDoc>(() => (cardId ? doc(db, COLLECTIONS.idCards, cardId) : null), [cardId]);
@@ -60,14 +44,11 @@ export function IdCardPage({ uid, canManage }: { uid: string; canManage: boolean
   }
 
   async function uploadPhoto(file: File) {
-    if (!PHOTO_TYPES.includes(file.type)) return setError("Use a JPG, PNG or WebP photo.");
     setBusy("photo");
     setError(null);
     setNotice(null);
     try {
-      const fileRef = ref(storage, `staff-photos/${uid}/${Date.now()}.jpg`);
-      await uploadBytes(fileRef, await resizePhoto(file), { contentType: "image/jpeg" });
-      await callFunction("updateStaffProfile", { uid, photoUrl: await getDownloadURL(fileRef) });
+      await callFunction("updateStaffProfile", { uid, photoUrl: await uploadStaffPhoto(uid, file) });
       setNotice("Photo updated on the card.");
     } catch (err) {
       setError(errorMessage(err));

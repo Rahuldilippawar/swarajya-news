@@ -213,3 +213,4 @@ fieldset:disabled .panel-thumb { opacity: 0.9; }
   .id-card { width: 54mm; border-radius: 3mm; box-shadow: none; border: 0.2mm solid #999; break-inside: avoid; }
   .id-cards { gap: 8mm; }
 }
+.staff-photo-preview { width: 64px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
