@@ -11,3 +11,4 @@ export { selectable, useCategories, useChildLocations, useLocationsOfType } from
 export { formatDateTime, timeAgo } from "./time";
 export { IdCard, type CardSettings } from "./idcard/IdCard";
 export { IdCardPage } from "./idcard/IdCardPage";
+export { PHOTO_TYPES, uploadStaffPhoto } from "./idcard/staffPhoto";
